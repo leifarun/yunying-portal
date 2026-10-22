@@ -2,7 +2,7 @@
 
 最后更新：2026-10-22
 
-当前线上版本：`v=18`  
+当前线上版本：`v=19`  
 状态：已发布，GitHub Pages 构建成功
 
 ## 一、如果这是新的 Codex 对话
@@ -14,7 +14,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=18`
+- 当前静态资源版本：`v=19`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -68,6 +68,7 @@
 - 处理状态统一为“已处理”
 - 不再采集预期结果、跟进日期、待复核、已完成、已关闭
 - 新动作保存完整指标快照
+- 处理记录表按 ASIN、MSKU、FNSKU、店铺四列展示商品信息
 
 ### 每周任务分配
 
@@ -88,7 +89,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=18`，部署后不会继续加载旧的“低/中潜力合并”任务表。
+- 当前静态资源缓存版本为 `v=19`，部署后不会继续加载旧的“低/中潜力合并”任务表。
 
 计数规则：
 

@@ -623,6 +623,7 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
 .change-values i { color: var(--muted-2); font-style: normal; }
 .change-metric small { display: block; margin-top: 3px; font-size: 8.5px; }
 .compact-empty { padding: 24px 16px; }
+.log-table { min-width: 1080px; }
 .log-note { display: block; max-width: 720px; margin-top: 3px; white-space: normal; line-height: 1.6; }
 
 @media (max-width: 700px) {
