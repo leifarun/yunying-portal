@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex,nofollow">
+  <title>运营三部 · 内部运营中台</title>
+  <link rel="stylesheet" href="./assets/styles.css?v=13">
+  <script defer src="./vendor/supabase.js"></script>
+  <script defer src="./vendor/xlsx.full.min.js"></script>
+  <script defer src="./assets/config.js?v=13"></script>
+  <script defer src="./assets/app.js?v=13"></script>
+</head>
+<body>
+  <div id="boot" class="boot-screen">
+    <div class="boot-mark">运</div>
+    <div>
+      <strong>运营三部 · 内部运营中台</strong>
+      <p>正在连接团队工作区…</p>
+    </div>
+  </div>
+
+  <section id="authScreen" class="auth-screen hidden">
+    <div class="auth-visual">
+      <div class="auth-badge">OPERATIONS / WEEKLY</div>
+      <h1>把每周的问题<br><span>变成可追踪的动作</span></h1>
+      <p>导入本周 Listing 数据，按板块分派处理，自动沉淀组员处理记录与周进度。</p>
+      <div class="auth-metrics">
+        <div><b>1</b><span>数据源</span></div>
+        <div><b>9</b><span>优化板块</span></div>
+        <div><b>∞</b><span>历史记录</span></div>
+      </div>
+    </div>
+    <div class="auth-panel">
+      <div class="auth-form-wrap">
+        <div class="brand-lockup">
+          <div class="brand-icon">运</div>
+          <div><strong>运营三部</strong><span>内部运营中台</span></div>
+        </div>
+        <h2>登录工作台</h2>
+        <p class="auth-sub">账号由主管直接创建，组员无需提供邮箱，不支持自助注册。</p>
+        <form id="loginForm" class="form-stack">
+          <label>用户名<input id="loginEmail" type="text" autocomplete="username" placeholder="请输入主管分配的用户名" required></label>
+          <label>密码<input id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入登录密码" required></label>
+          <button id="loginBtn" class="btn btn-primary btn-wide" type="submit">登录</button>
+        </form>
+        <div class="auth-actions">
+          <button id="forgotBtn" class="text-btn" type="button">忘记密码</button>
+          <span class="status-dot"><i></i> Supabase 已连接</span>
+        </div>
+        <p id="loginError" class="form-error" role="alert"></p>
+      </div>
+      <p class="auth-foot">数据仅对已启用的团队成员开放 · 处理记录永久保留</p>
+    </div>
+  </section>
+
+  <div id="portal" class="portal hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark">运</div>
+        <div><b>运营三部</b><span>内部运营中台</span></div>
+      </div>
+      <div class="batch-card">
+        <div class="batch-top"><span>当前数据批次</span><span id="batchStatePill" class="pill pill-green">已生效</span></div>
+        <strong id="batchTitle">尚未导入</strong>
+        <small id="batchDates">—</small>
+      </div>
+      <nav id="nav" class="nav"></nav>
+      <div class="sidebar-foot">
+        <button id="refreshBtn" class="nav-action"><span>↻</span> 刷新数据</button>
+        <button id="logoutBtn" class="nav-action danger"><span>↪</span> 退出登录</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="mobileMenuBtn" class="icon-btn mobile-only" type="button" aria-label="打开菜单">☰</button>
+        <div class="crumb"><span id="crumbRoot">总表数据看板</span><b id="crumbPage"></b></div>
+        <div class="topbar-actions">
+          <div id="syncState" class="sync-state"><i></i><span>已同步</span></div>
+          <button id="userChip" class="user-chip" type="button">
+            <span id="userAvatar" class="avatar">—</span>
+            <span class="user-copy"><b id="userName">—</b><small id="userRole">—</small></span>
+            <span class="chevron">⌄</span>
+          </button>
+          <div id="userMenu" class="user-menu hidden">
+            <div class="user-menu-head"><b id="menuName">—</b><span id="menuLogin">—</span></div>
+            <button data-nav="settings">账号设置</button>
+            <button id="menuLogoutBtn" class="danger-text">退出登录</button>
+          </div>
+        </div>
+      </header>
+      <div id="content" class="content"></div>
+    </main>
+  </div>
+
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="drawer" class="drawer hidden" aria-label="商品档案"></aside>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <section id="modal" class="modal hidden" role="dialog" aria-modal="true"></section>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <script>
+    window.addEventListener('error', function (event) {
+      if (window.__showBootError && event.error) window.__showBootError(event.error);
+    });
+  </script>
+</body>
+</html>
