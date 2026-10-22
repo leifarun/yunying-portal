@@ -48,7 +48,7 @@
 
 `supabase/migrations/007_team_shared_data.sql`
 
-`001`–`006` 已应用到当前项目；本轮新增的 `007_team_shared_data.sql` 需在 Supabase SQL Editor 执行后，团队共享数据权限才会生效。后续重建时请按文件名顺序执行。
+`001`–`007` 均已应用到当前项目，后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -56,6 +56,7 @@
 - `activate_import_batch` 事务函数存在
 - 产品表新增 14 个字段存在
 - 周统计表已开启 RLS
+- 全团队产品、处理记录、周统计和周任务共 4 条读取策略已确认为 `is_active_user()`
 
 ## 数据保留规则
 

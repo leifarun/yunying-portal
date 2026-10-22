@@ -166,7 +166,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/004_weekly_task_assignments.sql`
 - `supabase/migrations/005_creator_permissions.sql`
 - `supabase/migrations/006_split_slow_task_boards.sql`
-- `supabase/migrations/007_team_shared_data.sql`（本轮新增，需在 Supabase SQL Editor 应用）
+- `supabase/migrations/007_team_shared_data.sql`（已应用）
 
 ## 五、导入与存储策略
 
