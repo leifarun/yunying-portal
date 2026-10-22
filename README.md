@@ -4,7 +4,7 @@
 
 当前线上版本：`v=20`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
-数据库迁移：`001`–`007` 均已应用
+数据库迁移：`001`–`008` 均已应用
 
 ## 当前发布摘要
 
@@ -64,7 +64,7 @@
 
 `supabase/migrations/008_app_settings.sql`
 
-`001`–`007` 已应用到当前项目。`008_app_settings.sql` 为网站名称共享配置，需在 Supabase SQL Editor 执行后团队名称同步才会生效；后续重建时请按文件名顺序执行。
+`001`–`008` 均已应用到当前项目；`008_app_settings.sql` 已启用网站名称全团队共享。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 

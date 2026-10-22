@@ -5,7 +5,7 @@
 当前线上版本：`v=20`  
 状态：已发布，GitHub Pages 构建成功  
 最近发布：处理记录商品字段拆分、表头吸顶/排序/自适应列宽、阈值页修复  
-数据库迁移：`001`–`007` 均已应用并验证
+数据库迁移：`001`–`008` 均已应用并验证
 
 ## 一、如果这是新的 Codex 对话
 
@@ -128,7 +128,7 @@
 - 仅创作者可在“账号与权限”页修改
 - 保存后同步更新浏览器标签、登录页品牌和侧边栏品牌
 - 支持“主名称 · 副名称”格式，最多 60 个字符
-- 主管和组员只读；全团队共享依赖迁移 `008_app_settings.sql`
+- 主管和组员只读；全团队共享配置已通过 `008_app_settings.sql` 启用
 
 账号状态使用“在职/离职”。
 
@@ -182,7 +182,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/005_creator_permissions.sql`
 - `supabase/migrations/006_split_slow_task_boards.sql`
 - `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
-- `supabase/migrations/008_app_settings.sql`（网站名称共享配置，需应用）
+- `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
 
 ## 五、导入与存储策略
 
