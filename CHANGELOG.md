@@ -10,6 +10,12 @@
 - 不复制 `README_v1.md`、`PROJECT_STATE_old.md` 等历史副本，历史版本以 Git 提交记录为准
 - 数据库结构变化：必须新增编号迁移文件，不能只改生产数据库
 
+## 2026-10-22（新部门部署手册）
+
+- 新增 `DEPLOY_NEW_DEPARTMENT.md`
+- 覆盖 Fork、Supabase 建库、001–008 迁移、首位创作者、Edge Function、Auth 地址和 GitHub Pages
+- 增加上线验收清单、安全说明和常见问题
+
 ## 2026-10-22（启动页名称缓存）
 
 - 启动页在 Supabase 请求前优先读取本地缓存的自定义网站名称

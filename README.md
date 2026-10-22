@@ -41,6 +41,14 @@
 - 账号权限页：创作者管理全部账号，主管只能维护组员，状态使用在职/离职
 - 演示模式：`?demo=1`，只用于预览界面，不读写数据库
 
+## 新部门独立部署
+
+如需复制给其他部门，请使用独立 GitHub 仓库和独立 Supabase 项目。完整步骤见：
+
+[`DEPLOY_NEW_DEPARTMENT.md`](./DEPLOY_NEW_DEPARTMENT.md)
+
+手册包含建库、8 个迁移、首位创作者初始化、Edge Function、Auth 地址、GitHub Pages、验收清单和常见问题。
+
 ## Supabase 项目
 
 - Project URL: `https://ofwvjfshnnajnfkxexno.supabase.co`
@@ -190,6 +198,7 @@ yunying-portal/
 │     ├─ 006_split_slow_task_boards.sql
 │     ├─ 007_team_shared_data.sql
 │     └─ 008_app_settings.sql
+├─ DEPLOY_NEW_DEPARTMENT.md
 ├─ README.md
 ├─ CHANGELOG.md
 └─ PROJECT_STATE.md

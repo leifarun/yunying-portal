@@ -21,6 +21,7 @@
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
 - 部署目录应直接包含 `index.html`、`assets`、`vendor`、`supabase`
+- 新部门复制部署手册：`DEPLOY_NEW_DEPARTMENT.md`
 
 ## 二、业务目标
 
