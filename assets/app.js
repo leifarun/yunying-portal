@@ -1130,9 +1130,19 @@
     return `<td class="${classes}"${frozenStyle ? ` style="${frozenStyle}"` : ""}>${content}</td>`;
   }
 
+  let productHeaderMeasureContext = null;
+  function productColumnWidth(column) {
+    const fallback = Number(column.width) || 64;
+    productHeaderMeasureContext ||= document.createElement("canvas").getContext("2d");
+    if (!productHeaderMeasureContext) return fallback;
+    productHeaderMeasureContext.font = '600 10px Arial, "Microsoft YaHei", sans-serif';
+    const labelWidth = productHeaderMeasureContext.measureText(String(column.label || "")).width;
+    return Math.max(fallback, Math.ceil(labelWidth) + 46);
+  }
+
   function productSortHeader(column, sortDir) {
     const label = escapeHtml(column.label);
-    return `<span class="table-sort-head"><span>${label}</span><span class="table-sort-controls"><button type="button" class="table-sort-btn ${sortDir === "asc" ? "active" : ""}" data-action="sort-column" data-sort-key="${attr(column.key)}" data-sort-dir="asc" title="按${label}升序" aria-label="按${label}升序">▲</button><button type="button" class="table-sort-btn ${sortDir === "desc" ? "active" : ""}" data-action="sort-column" data-sort-key="${attr(column.key)}" data-sort-dir="desc" title="按${label}降序" aria-label="按${label}降序">▼</button></span></span>`;
+    return `<span class="table-sort-head"><span title="${label}">${label}</span><span class="table-sort-controls"><button type="button" class="table-sort-btn ${sortDir === "asc" ? "active" : ""}" data-action="sort-column" data-sort-key="${attr(column.key)}" data-sort-dir="asc" title="按${label}升序" aria-label="按${label}升序">▲</button><button type="button" class="table-sort-btn ${sortDir === "desc" ? "active" : ""}" data-action="sort-column" data-sort-key="${attr(column.key)}" data-sort-dir="desc" title="按${label}降序" aria-label="按${label}降序">▼</button></span></span>`;
   }
 
   function productTable(rows, boardKey) {
@@ -1141,11 +1151,13 @@
     const hidden = new Set(state.hiddenCols);
     frozenKeys.forEach((key) => hidden.delete(key));
     const columns = PRODUCT_COLUMN_DEFS.filter((column) => !hidden.has(column.key));
+    const columnWidths = new Map(columns.map((column) => [column.key, productColumnWidth(column)]));
     const leftMap = new Map();
     let left = 0;
-    frozenKeys.forEach((key) => { const column = PRODUCT_COLUMN_DEFS.find((item) => item.key === key); leftMap.set(key, left); left += Number(column?.width || 100); });
+    frozenKeys.forEach((key) => { leftMap.set(key, left); left += columnWidths.get(key) || 100; });
+    const tableWidth = columns.reduce((sum, column) => sum + (columnWidths.get(column.key) || 64), 0) + 142;
     const numericKeys = PRODUCT_NUMERIC_KEYS;
-    return `<div class="table-card"><div class="table-scroll"><table class="data-table prototype-data-table"><thead><tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const style = `${frozen ? `left:${leftMap.get(column.key)}px;` : ""}min-width:${column.width}px;width:${column.width}px;`; const sortDir = state.sortKey === column.key ? state.sortDir : ""; const ariaSort = sortDir === "asc" ? "ascending" : sortDir === "desc" ? "descending" : "none"; return `<th class="${numericKeys.has(column.key) ? "num" : ""} ${frozen ? "frozen-col" : ""} ${lastFrozen ? "frozen-last" : ""}" aria-sort="${ariaSort}" style="${style}">${productSortHeader(column, sortDir)}</th>`; }).join("")}<th class="action-sticky" style="min-width:142px;width:142px">操作</th></tr></thead><tbody>${rows.map((p) => `<tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const frozenStyle = frozen ? `left:${leftMap.get(column.key)}px` : ""; return productCell(p, column, boardKey, frozen ? `frozen-col${lastFrozen ? " frozen-last" : ""}` : "", frozenStyle); }).join("")}<td class="action-sticky"><button class="btn btn-sm btn-primary" data-action="open-action" data-msku="${attr(p.msku)}" data-shop="${attr(p.shop)}" data-board="${attr(resolveActionBoard(p, boardKey))}">处理</button></td></tr>`).join("")}</tbody></table></div></div>`;
+    return `<div class="table-card"><div class="table-scroll"><table class="data-table prototype-data-table" style="width:${tableWidth}px;min-width:${tableWidth}px"><thead><tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const width = columnWidths.get(column.key) || 64; const style = `${frozen ? `left:${leftMap.get(column.key)}px;` : ""}min-width:${width}px;width:${width}px;`; const sortDir = state.sortKey === column.key ? state.sortDir : ""; const ariaSort = sortDir === "asc" ? "ascending" : sortDir === "desc" ? "descending" : "none"; return `<th class="${numericKeys.has(column.key) ? "num" : ""} ${frozen ? "frozen-col" : ""} ${lastFrozen ? "frozen-last" : ""}" aria-sort="${ariaSort}" style="${style}">${productSortHeader(column, sortDir)}</th>`; }).join("")}<th class="action-sticky" style="min-width:142px;width:142px">操作</th></tr></thead><tbody>${rows.map((p) => `<tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const frozenStyle = frozen ? `left:${leftMap.get(column.key)}px` : ""; return productCell(p, column, boardKey, frozen ? `frozen-col${lastFrozen ? " frozen-last" : ""}` : "", frozenStyle); }).join("")}<td class="action-sticky"><button class="btn btn-sm btn-primary" data-action="open-action" data-msku="${attr(p.msku)}" data-shop="${attr(p.shop)}" data-board="${attr(resolveActionBoard(p, boardKey))}">处理</button></td></tr>`).join("")}</tbody></table></div></div>`;
   }
   function openBatchSearch() {
     const f = currentFilters();

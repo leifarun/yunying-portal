@@ -304,9 +304,10 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
 .fixed-table-hscroll::-webkit-scrollbar { height: 16px; }
 .fixed-table-hscroll::-webkit-scrollbar-track { background: #edf1f6; }
 .fixed-table-hscroll::-webkit-scrollbar-thumb { border: 3px solid #edf1f6; border-radius: 999px; background: #9aa8bc; }
-.table-sort-head { display: flex; align-items: center; justify-content: space-between; gap: 5px; width: 100%; }
+.table-sort-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; width: 100%; min-width: 0; }
+.table-sort-head > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .data-table th.num .table-sort-head { justify-content: flex-end; }
-.table-sort-controls { display: inline-flex; flex: none; flex-direction: column; gap: 0; }
+.table-sort-controls { display: inline-flex; flex: none; flex-direction: column; gap: 0; margin-left: auto; }
 .table-sort-btn {
   width: 13px;
   height: 8px;
