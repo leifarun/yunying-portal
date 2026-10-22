@@ -217,15 +217,21 @@
     { key: "age_331_365", label: "331<=库龄<=365天", aliases: ["331<=库龄<=365天", "331-365天", "331-365"] },
     { key: "age_365p", label: "365<=库龄", aliases: ["365<=库龄", "365+库龄", "365+", ">365"] }
   ];
+  const PRODUCT_NUMERIC_KEYS = new Set(["sales", "revenue", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "kxb", "ad_spend", "ad_orders", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
   const REQUIRED_IMPORT_KEYS = ["asin", "msku", "shop", "owner", "sales", "revenue", "refund_qty", "fba_avail", "ad_spend", "ad_orders", "imp", "clk", "status"];
   const VALID_STATUS = new Set(["在售", "停售", "搜索禁止显示", "无在售信息"]);
 
   let sb = null;
   let toastTimer = null;
+  let stickyTableFrame = 0;
+  let stickyTableObserver = null;
+  let fixedHeaderSource = null;
+  let fixedHScrollSource = null;
   const state = {
     session: null, profile: null, profiles: [], batches: [], currentBatch: null,
     products: [], actions: [], weeklyStats: [], weeklyAssignments: [], thresholds: [], view: "dashboard", board: "all",
     page: 1, pageSize: 50, loading: false, busy: false, demo: false, filters: {}, shopAll: false, hiddenCols: new Set(),
+    sortKey: null, sortDir: "desc",
     logFilters: { user: "", board: "", time: "30d" }, selectedWeekId: null, pendingImport: null
   };
 
@@ -273,6 +279,7 @@
 
   function init() {
     bindEvents();
+    initStickyTableTools();
     try { const saved = JSON.parse(localStorage.getItem("portal-hidden-cols") || "[]"); if (Array.isArray(saved)) state.hiddenCols = new Set(saved); } catch (_) {}
     if (!window.supabase || !cfg.supabaseUrl || !cfg.supabaseKey) { showBootError(new Error("Supabase SDK 或配置文件未加载")); return; }
     sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
@@ -337,6 +344,113 @@
     $("#boot")?.classList.add("hidden"); $("#authScreen")?.classList.add("hidden"); $("#portal")?.classList.remove("hidden");
     renderChrome(); renderView();
   }
+  function initStickyTableTools() {
+    const content = $("#content");
+    stickyTableObserver?.disconnect();
+    if (content) {
+      stickyTableObserver = new MutationObserver(() => {
+        fixedHeaderSource = null;
+        fixedHScrollSource = null;
+        scheduleStickyTableUi();
+      });
+      stickyTableObserver.observe(content, { childList: true, subtree: true });
+    }
+    window.addEventListener("scroll", scheduleStickyTableUi, { passive: true });
+    document.addEventListener("scroll", scheduleStickyTableUi, true);
+    window.addEventListener("resize", scheduleStickyTableUi);
+    $("#fixedTableHScroll")?.addEventListener("scroll", () => {
+      if (fixedHScrollSource) fixedHScrollSource.scrollLeft = $("#fixedTableHScroll").scrollLeft;
+      scheduleStickyTableUi();
+    });
+    scheduleStickyTableUi();
+  }
+
+  function scheduleStickyTableUi() {
+    if (stickyTableFrame) return;
+    stickyTableFrame = requestAnimationFrame(() => {
+      stickyTableFrame = 0;
+      updateStickyTableUi();
+    });
+  }
+
+  function updateStickyTableUi() {
+    const headerHost = $("#fixedTableHeader");
+    const hscroll = $("#fixedTableHScroll");
+    const spacer = $("#fixedTableHScrollSpacer");
+    if (!headerHost || !hscroll || !spacer) return;
+
+    const modalOpen = !$("#modal")?.classList.contains("hidden");
+    const topOffset = $(".topbar")?.getBoundingClientRect().bottom || 0;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const candidates = $$("#content .table-scroll")
+      .map((container) => ({ container, table: container.querySelector(".data-table") }))
+      .filter((entry) => entry.table)
+      .map((entry) => ({ ...entry, rect: entry.container.getBoundingClientRect() }))
+      .filter((entry) => entry.rect.height > 0 && entry.rect.bottom > 0 && entry.rect.top < viewportHeight);
+
+    const headerEntry = modalOpen ? null : candidates
+      .filter((entry) => entry.rect.top < topOffset && entry.rect.bottom > topOffset + 1)
+      .sort((a, b) => a.rect.top - b.rect.top)
+      .pop();
+
+    if (headerEntry) {
+      const left = Math.max(0, Math.floor(headerEntry.rect.left));
+      const right = Math.min(viewportWidth, Math.ceil(headerEntry.rect.right));
+      if (right > left) {
+        if (fixedHeaderSource !== headerEntry.container) {
+          const clone = headerEntry.table.cloneNode(true);
+          clone.querySelectorAll("tbody, tfoot").forEach((node) => node.remove());
+          clone.style.width = `${headerEntry.table.getBoundingClientRect().width}px`;
+          headerHost.replaceChildren(clone);
+          fixedHeaderSource = headerEntry.container;
+        }
+        headerHost.style.left = `${left}px`;
+        headerHost.style.top = `${Math.ceil(topOffset)}px`;
+        headerHost.style.width = `${right - left}px`;
+        headerHost.style.height = `${Math.ceil(headerEntry.table.querySelector("thead")?.getBoundingClientRect().height || 38)}px`;
+        headerHost.scrollLeft = headerEntry.container.scrollLeft;
+        headerHost.classList.remove("hidden");
+      } else {
+        headerHost.classList.add("hidden");
+      }
+    } else {
+      fixedHeaderSource = null;
+      headerHost.replaceChildren();
+      headerHost.classList.add("hidden");
+    }
+
+    const scrollable = modalOpen ? [] : candidates
+      .filter((entry) => entry.container.scrollWidth > entry.container.clientWidth + 1)
+      .filter((entry) => entry.rect.bottom > topOffset && entry.rect.top < viewportHeight);
+    const visibleHeight = (entry) => Math.max(0, Math.min(entry.rect.bottom, viewportHeight) - Math.max(entry.rect.top, topOffset));
+    const horizontalEntry = headerEntry && scrollable.some((entry) => entry.container === headerEntry.container)
+      ? headerEntry
+      : scrollable.sort((a, b) => visibleHeight(b) - visibleHeight(a))[0];
+
+    if (horizontalEntry) {
+      const left = Math.max(0, Math.floor(horizontalEntry.rect.left));
+      const right = Math.min(viewportWidth, Math.ceil(horizontalEntry.rect.right));
+      if (right > left) {
+        fixedHScrollSource = horizontalEntry.container;
+        hscroll.style.left = `${left}px`;
+        hscroll.style.width = `${right - left}px`;
+        spacer.style.width = `${Math.max(horizontalEntry.container.scrollWidth, horizontalEntry.container.clientWidth)}px`;
+        hscroll.scrollLeft = horizontalEntry.container.scrollLeft;
+        hscroll.classList.remove("hidden");
+        document.body.classList.add("table-hscroll-active");
+      } else {
+        fixedHScrollSource = null;
+        hscroll.classList.add("hidden");
+        document.body.classList.remove("table-hscroll-active");
+      }
+    } else {
+      fixedHScrollSource = null;
+      hscroll.classList.add("hidden");
+      document.body.classList.remove("table-hscroll-active");
+    }
+  }
+
   function bindEvents() {
     $("#loginForm")?.addEventListener("submit", handleLogin);
     $("#forgotBtn")?.addEventListener("click", handleForgotPassword);
@@ -543,6 +657,13 @@
     const actionEl = event.target.closest("[data-action]");
     if (!actionEl) return;
     const action = actionEl.dataset.action;
+    if (action === "sort-column") {
+      state.sortKey = actionEl.dataset.sortKey || null;
+      state.sortDir = actionEl.dataset.sortDir === "asc" ? "asc" : "desc";
+      state.page = 1;
+      renderView();
+      return;
+    }
     if (action === "reload") loadWorkspace(true);
     if (action === "open-action") openAction(actionEl.dataset.msku, actionEl.dataset.shop, actionEl.dataset.board);
     if (action === "open-profile") openProfile(actionEl.dataset.msku, actionEl.dataset.shop);
@@ -836,6 +957,27 @@
     }).filter((x) => x.assigned > 0 || x.actions > 0).sort((a, b) => b.assigned - a.assigned || a.owner.localeCompare(b.owner, "zh-CN"));
   }
 
+  function sortProducts(rows) {
+    if (!state.sortKey) return rows;
+    const direction = state.sortDir === "asc" ? 1 : -1;
+    const valueFor = (product, key) => key === "issue" ? (product.issueKeys?.length || 0) : product[key];
+    return rows.map((row, index) => ({ row, index })).sort((a, b) => {
+      const aValue = valueFor(a.row, state.sortKey);
+      const bValue = valueFor(b.row, state.sortKey);
+      const aEmpty = aValue === null || aValue === undefined || aValue === "";
+      const bEmpty = bValue === null || bValue === undefined || bValue === "";
+      if (aEmpty !== bEmpty) return aEmpty ? 1 : -1;
+      if (aEmpty && bEmpty) return a.index - b.index;
+      let comparison;
+      if (PRODUCT_NUMERIC_KEYS.has(state.sortKey) || (typeof aValue === "number" && typeof bValue === "number")) {
+        comparison = Number(aValue || 0) - Number(bValue || 0);
+      } else {
+        comparison = String(aValue).localeCompare(String(bValue), "zh-CN", { numeric: true, sensitivity: "base" });
+      }
+      return comparison ? comparison * direction : a.index - b.index;
+    }).map((entry) => entry.row);
+  }
+
   function renderProductList() { renderBoardLike("all"); }
   function renderBoard(boardKey) { renderBoardLike(boardKey); }
 
@@ -932,7 +1074,7 @@
 
   function renderBoardLike(boardKey) {
     const meta = boardKey === "all" ? { label: "总 Listing 数据", desc: "查看当前批次全部产品，按商品、店铺、负责人和问题定位筛选。", formula: "当前批次全部产品明细" } : BOARD[boardKey];
-    const rows = filteredProducts(boardKey);
+    const rows = sortProducts(filteredProducts(boardKey));
     const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
     if (state.page > totalPages) state.page = totalPages;
     const pageRows = rows.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
@@ -944,7 +1086,7 @@
 
   function productCell(product, column, boardKey, frozenClass = "", frozenStyle = "") {
     const key = column.key;
-    const numericKeys = new Set(["sales", "revenue", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "kxb", "ad_spend", "ad_orders", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
+    const numericKeys = PRODUCT_NUMERIC_KEYS;
     let content = "";
     let extraClass = "";
     if (key === "asin") content = `<span class="mono">${escapeHtml(product.asin || "—")}</span>`;
@@ -983,6 +1125,11 @@
     return `<td class="${classes}"${frozenStyle ? ` style="${frozenStyle}"` : ""}>${content}</td>`;
   }
 
+  function productSortHeader(column, sortDir) {
+    const label = escapeHtml(column.label);
+    return `<span class="table-sort-head"><span>${label}</span><span class="table-sort-controls"><button type="button" class="table-sort-btn ${sortDir === "asc" ? "active" : ""}" data-action="sort-column" data-sort-key="${attr(column.key)}" data-sort-dir="asc" title="按${label}升序" aria-label="按${label}升序">▲</button><button type="button" class="table-sort-btn ${sortDir === "desc" ? "active" : ""}" data-action="sort-column" data-sort-key="${attr(column.key)}" data-sort-dir="desc" title="按${label}降序" aria-label="按${label}降序">▼</button></span></span>`;
+  }
+
   function productTable(rows, boardKey) {
     if (!rows.length) return `<div class="table-card"><div class="empty"><b>当前筛选条件没有商品</b><span>调整筛选条件或等待下一批数据</span></div></div>`;
     const frozenKeys = ["asin", "msku", "fnsku"];
@@ -992,8 +1139,8 @@
     const leftMap = new Map();
     let left = 0;
     frozenKeys.forEach((key) => { const column = PRODUCT_COLUMN_DEFS.find((item) => item.key === key); leftMap.set(key, left); left += Number(column?.width || 100); });
-    const numericKeys = new Set(["sales", "revenue", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "kxb", "ad_spend", "ad_orders", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
-    return `<div class="table-card"><div class="table-scroll"><table class="data-table prototype-data-table"><thead><tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const style = `${frozen ? `left:${leftMap.get(column.key)}px;` : ""}min-width:${column.width}px;width:${column.width}px;`; return `<th class="${numericKeys.has(column.key) ? "num" : ""} ${frozen ? "frozen-col" : ""} ${lastFrozen ? "frozen-last" : ""}" style="${style}">${escapeHtml(column.label)}</th>`; }).join("")}<th class="action-sticky" style="min-width:142px;width:142px">操作</th></tr></thead><tbody>${rows.map((p) => `<tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const frozenStyle = frozen ? `left:${leftMap.get(column.key)}px` : ""; return productCell(p, column, boardKey, frozen ? `frozen-col${lastFrozen ? " frozen-last" : ""}` : "", frozenStyle); }).join("")}<td class="action-sticky"><button class="btn btn-sm btn-primary" data-action="open-action" data-msku="${attr(p.msku)}" data-shop="${attr(p.shop)}" data-board="${attr(resolveActionBoard(p, boardKey))}">处理</button></td></tr>`).join("")}</tbody></table></div></div>`;
+    const numericKeys = PRODUCT_NUMERIC_KEYS;
+    return `<div class="table-card"><div class="table-scroll"><table class="data-table prototype-data-table"><thead><tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const style = `${frozen ? `left:${leftMap.get(column.key)}px;` : ""}min-width:${column.width}px;width:${column.width}px;`; const sortDir = state.sortKey === column.key ? state.sortDir : ""; const ariaSort = sortDir === "asc" ? "ascending" : sortDir === "desc" ? "descending" : "none"; return `<th class="${numericKeys.has(column.key) ? "num" : ""} ${frozen ? "frozen-col" : ""} ${lastFrozen ? "frozen-last" : ""}" aria-sort="${ariaSort}" style="${style}">${productSortHeader(column, sortDir)}</th>`; }).join("")}<th class="action-sticky" style="min-width:142px;width:142px">操作</th></tr></thead><tbody>${rows.map((p) => `<tr>${columns.map((column) => { const frozen = frozenKeys.includes(column.key); const lastFrozen = column.key === "fnsku"; const frozenStyle = frozen ? `left:${leftMap.get(column.key)}px` : ""; return productCell(p, column, boardKey, frozen ? `frozen-col${lastFrozen ? " frozen-last" : ""}` : "", frozenStyle); }).join("")}<td class="action-sticky"><button class="btn btn-sm btn-primary" data-action="open-action" data-msku="${attr(p.msku)}" data-shop="${attr(p.shop)}" data-board="${attr(resolveActionBoard(p, boardKey))}">处理</button></td></tr>`).join("")}</tbody></table></div></div>`;
   }
   function openBatchSearch() {
     const f = currentFilters();
@@ -1068,7 +1215,7 @@
     $("#modal").className = "modal xwide";
     $("#modal").dataset.msku = product.msku;
     $("#modal").dataset.shop = product.shop;
-    $("#modal").innerHTML = `<div class="modal-head"><div><h2>${escapeHtml(product.msku)}</h2><div class="modal-subline">${escapeHtml(product.shop)} · ${escapeHtml(product.country || "—")} · 负责人 ${escapeHtml(product.owner || "—")}</div></div><div class="tag-list">${issueTagHtml(product, 5)}</div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body action-modal-body"><div class="detail-grid"><div><span>销量</span><b>${fmt(product.sales)}</b></div><div><span>FBA可售</span><b>${fmt(product.fba_avail)}</b></div><div><span>展示 / 点击</span><b>${fmt(product.imp)} / ${fmt(product.clk)}</b></div><div><span>CTR</span><b class="${product.ctr < thresholdNumber(5, 0.6) / 100 ? "bad" : ""}">${fmtPct(product.ctr)}</b></div><div><span>广告CVR</span><b class="${product.cvr < thresholdNumber(4, 5) / 100 ? "bad" : ""}">${fmtPct(product.cvr)}</b></div><div><span>广告花费</span><b>${fmtMoney(product.ad_spend)}</b></div><div><span>广告订单</span><b>${fmt(product.ad_orders)}</b></div><div><span>退款量</span><b>${fmt(product.refund_qty)}</b></div><div><span>评分</span><b>${product.score || "—"}</b></div><div><span>库销比</span><b class="${product.kxb > thresholdNumber(1, 4) ? "warn" : ""}">${product.kxb >= 900 ? "∞" : product.kxb.toFixed(1)}</b></div></div><section class="action-section"><div class="action-section-head"><div><h3>当前判定链路</h3><p>实际值与所需目标逐级比较，红色或橙色表示当前卡点</p></div><span class="pill ${product.issueKeys.length ? "pill-red" : "pill-green"}">${product.issueKeys.length ? escapeHtml(BOARD[product.issueKeys[0]]?.label || "需优化") : "达标"}</span></div>${judgmentChainHtml(product)}</section><section class="action-section"><div class="action-section-head"><div><h3>历史处理与指标变化</h3><p>每张卡片显示处理当时 → 当前的关键指标</p></div><span class="pill pill-gray">${history.length} 条记录</span></div>${actionHistoryHtml(product, history)}</section><section class="action-section action-form-section"><div class="action-section-head"><div><h3>新增本次处理</h3><p>提交后统一记为“已处理”，并自动保存当前指标快照</p></div></div><div class="form-grid two"><label>优化板块<select id="actionBoard">${BOARD_ORDER.map((key) => `<option value="${key}" ${key === defaultBoard ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select></label><label>动作类型<select id="actionType">${ACTION_TYPES.map((type) => `<option value="${attr(type)}">${escapeHtml(type)}</option>`).join("")}</select></label><label style="grid-column:1/-1">处理动作与依据<span class="field-help">写清楚做了什么、为什么做。提交时会自动记录处理人、时间和当前指标。</span><textarea id="actionNote" placeholder="例：调价 29.90 → 27.90（-6.7%），同时换主图；7 天后观察 CTR 是否从 0.30% 提升到 0.60%"></textarea><div class="phrase-list">${["调价", "换主图", "改五点", "广告否词", "加预算", "报 DOTD", "清货", "翻新"].map((text) => `<button type="button" class="phrase" data-phrase="${attr(text)}">${escapeHtml(text)}</button>`).join("")}</div></label></div></section></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="submit-action">提交处理记录</button></div>`;
+    $("#modal").innerHTML = `<div class="modal-head"><div><h2>${escapeHtml(product.msku)}</h2><div class="modal-subline">${escapeHtml(product.shop)} · ${escapeHtml(product.country || "—")} · 负责人 ${escapeHtml(product.owner || "—")}${product.owner && state.profile?.name && product.owner !== state.profile.name ? ` · ${escapeHtml(state.profile.name)} 协助处理，完成计入 ${escapeHtml(product.owner)}` : ""}</div></div><div class="tag-list">${issueTagHtml(product, 5)}</div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body action-modal-body"><div class="detail-grid"><div><span>销量</span><b>${fmt(product.sales)}</b></div><div><span>FBA可售</span><b>${fmt(product.fba_avail)}</b></div><div><span>展示 / 点击</span><b>${fmt(product.imp)} / ${fmt(product.clk)}</b></div><div><span>CTR</span><b class="${product.ctr < thresholdNumber(5, 0.6) / 100 ? "bad" : ""}">${fmtPct(product.ctr)}</b></div><div><span>广告CVR</span><b class="${product.cvr < thresholdNumber(4, 5) / 100 ? "bad" : ""}">${fmtPct(product.cvr)}</b></div><div><span>广告花费</span><b>${fmtMoney(product.ad_spend)}</b></div><div><span>广告订单</span><b>${fmt(product.ad_orders)}</b></div><div><span>退款量</span><b>${fmt(product.refund_qty)}</b></div><div><span>评分</span><b>${product.score || "—"}</b></div><div><span>库销比</span><b class="${product.kxb > thresholdNumber(1, 4) ? "warn" : ""}">${product.kxb >= 900 ? "∞" : product.kxb.toFixed(1)}</b></div></div><section class="action-section"><div class="action-section-head"><div><h3>当前判定链路</h3><p>实际值与所需目标逐级比较，红色或橙色表示当前卡点</p></div><span class="pill ${product.issueKeys.length ? "pill-red" : "pill-green"}">${product.issueKeys.length ? escapeHtml(BOARD[product.issueKeys[0]]?.label || "需优化") : "达标"}</span></div>${judgmentChainHtml(product)}</section><section class="action-section"><div class="action-section-head"><div><h3>历史处理与指标变化</h3><p>每张卡片显示处理当时 → 当前的关键指标</p></div><span class="pill pill-gray">${history.length} 条记录</span></div>${actionHistoryHtml(product, history)}</section><section class="action-section action-form-section"><div class="action-section-head"><div><h3>新增本次处理</h3><p>提交后统一记为“已处理”，并自动保存当前指标快照</p></div></div><div class="form-grid two"><label>优化板块<select id="actionBoard">${BOARD_ORDER.map((key) => `<option value="${key}" ${key === defaultBoard ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select></label><label>动作类型<select id="actionType">${ACTION_TYPES.map((type) => `<option value="${attr(type)}">${escapeHtml(type)}</option>`).join("")}</select></label><label style="grid-column:1/-1">处理动作与依据<span class="field-help">写清楚做了什么、为什么做。提交时会自动记录处理人、时间和当前指标。</span><textarea id="actionNote" placeholder="例：调价 29.90 → 27.90（-6.7%），同时换主图；7 天后观察 CTR 是否从 0.30% 提升到 0.60%"></textarea><div class="phrase-list">${["调价", "换主图", "改五点", "广告否词", "加预算", "报 DOTD", "清货", "翻新"].map((text) => `<button type="button" class="phrase" data-phrase="${attr(text)}">${escapeHtml(text)}</button>`).join("")}</div></label></div></section></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="submit-action">提交处理记录</button></div>`;
     showModal();
     setTimeout(() => $("#actionNote")?.focus(), 80);
   }
@@ -1187,7 +1334,7 @@
     const assignmentValue = (owner, key) => Number(assignments.find((item) => item.owner === owner && item.board_key === key)?.target_count || 0);
     const ownerTotal = (owner) => TASK_BOARDS.reduce((sum, task) => sum + assignmentValue(owner, task.key), 0);
     const taskColgroup = `<colgroup><col class="task-member-col">${TASK_BOARDS.map(() => `<col class="task-board-col">`).join("")}<col class="task-summary-col"></colgroup>`;
-    $("#content").innerHTML = `<div class="page-head"><div><h1>每周处理进度</h1><p>主管按组员和板块分配任务，完成数按处理商品数统计。</p></div><div class="page-actions week-selector"><select id="weekBatchSelect">${state.batches.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>第${item.week_no}周 · ${formatDate(item.week_start)}–${formatDate(item.week_end)}</option>`).join("")}</select><button class="btn" data-action="export-weekly">导出周报</button>${isAdmin ? `<button class="btn btn-primary" data-action="save-assignments">保存任务分配</button>` : ""}</div></div><div class="hint"><strong>计数规则</strong><span>同一个商品属于多个板块时，处理该商品后各板块分别算完成 1；同一个板块内重复提交多次仍只算 1 个商品。</span></div><div class="week-summary-grid"><div class="week-card"><span>本周分配任务</span><strong>${fmt(assignedTotal)}</strong><small>按各板块任务数合计</small></div><div class="week-card"><span>已完成数量</span><strong>${fmt(completedTotal)}</strong><small>按商品去重后合计</small></div><div class="week-card"><span>整体完成率</span><strong>${overallRate.toFixed(1)}%</strong><small>已完成 ÷ 已分配</small></div><div class="week-card"><span>本周处理动作</span><strong>${fmt(actions.length)}</strong><small>已提交的处理记录</small></div></div><section class="card weekly-assignment-card"><div class="card-head"><div><h2>${isAdmin ? "主管分配任务" : "我的本周任务"}</h2><p>${weekText(batch)} · ${isAdmin ? "输入每人每个板块要完成的数量，点击右上角保存" : "以下为主管分配的目标数量"}</p></div><span class="pill pill-blue">${isAdmin ? "可编辑" : "只读"}</span></div><div class="card-body table-scroll"><table class="data-table task-table">${taskColgroup}<thead><tr><th>组员</th>${TASK_BOARDS.map((task) => `<th class="num">${escapeHtml(task.label)}</th>`).join("")}<th class="num">任务合计</th></tr></thead><tbody>${report.map((person) => `<tr><td><b>${escapeHtml(person.owner)}</b></td>${TASK_BOARDS.map((task) => `<td class="num">${isAdmin ? `<input class="task-input" type="number" min="0" step="1" data-task-owner="${attr(person.owner)}" data-task-board="${task.key}" value="${assignmentValue(person.owner, task.key)}">` : `<b>${fmt(assignmentValue(person.owner, task.key))}</b>`}</td>`).join("")}<td class="num"><b>${fmt(ownerTotal(person.owner))}</b></td></tr>`).join("")}<tr class="total-row"><td>板块合计</td>${TASK_BOARDS.map((task) => `<td class="num">${fmt(report.reduce((sum, person) => sum + assignmentValue(person.owner, task.key), 0))}</td>`).join("")}<td class="num"><b>${fmt(assignedTotal)}</b></td></tr></tbody></table></div></section><section class="card weekly-progress-card"><div class="card-head"><div><h2>任务完成进度</h2><p>每格显示“已完成 / 已分配”，同商品多板块分别计数</p></div><span class="pill pill-green">${report.length} 名组员</span></div><div class="card-body table-scroll"><table class="data-table task-progress-table">${taskColgroup}<thead><tr><th>组员</th>${TASK_BOARDS.map((task) => `<th class="num">${escapeHtml(task.label)}</th>`).join("")}<th class="num">整体进度</th></tr></thead><tbody>${report.map((person) => `<tr><td><div class="team-person"><span class="mini-avatar">${escapeHtml(firstChar(person.owner))}</span><div><b>${escapeHtml(person.owner)}</b><small>${person.completed} / ${person.target}</small></div></div></td>${person.tasks.map((task) => `<td class="num"><div class="task-progress-cell ${task.target === 0 ? "empty" : task.completed >= task.target ? "done" : task.completed > 0 ? "doing" : ""}"><b>${task.completed} / ${task.target}</b><span>${task.target ? task.rate.toFixed(0) + "%" : "未分配"}</span></div></td>`).join("")}<td class="num"><div class="task-total-progress"><b>${person.rate.toFixed(1)}%</b><span>${person.completed} / ${person.target}</span><div class="progress"><i style="width:${person.rate}%;background:${person.rate >= 100 ? "var(--green)" : person.rate >= 50 ? "var(--blue)" : "var(--orange)"}"></i></div></div></td></tr>`).join("") || `<tr><td colspan="${TASK_BOARDS.length + 2}"><div class="empty"><b>暂无可分配组员</b><span>请先建立组员账号或导入带负责人的数据</span></div></td></tr>`}</tbody></table></div></section>`;
+    $("#content").innerHTML = `<div class="page-head"><div><h1>每周处理进度</h1><p>主管按组员和板块分配任务；全员可协助处理，完成数归属商品负责人。</p></div><div class="page-actions week-selector"><select id="weekBatchSelect">${state.batches.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>第${item.week_no}周 · ${formatDate(item.week_start)}–${formatDate(item.week_end)}</option>`).join("")}</select><button class="btn" data-action="export-weekly">导出周报</button>${isAdmin ? `<button class="btn btn-primary" data-action="save-assignments">保存任务分配</button>` : ""}</div></div><div class="hint"><strong>计数规则</strong><span>同一个商品属于多个板块时，处理该商品后各板块分别算完成 1；同一个板块内重复提交多次仍只算 1 个商品。任何组员协助处理，完成数都计入商品负责人。</span></div><div class="week-summary-grid"><div class="week-card"><span>本周分配任务</span><strong>${fmt(assignedTotal)}</strong><small>按各板块任务数合计</small></div><div class="week-card"><span>已完成数量</span><strong>${fmt(completedTotal)}</strong><small>按商品去重后合计</small></div><div class="week-card"><span>整体完成率</span><strong>${overallRate.toFixed(1)}%</strong><small>已完成 ÷ 已分配</small></div><div class="week-card"><span>本周处理动作</span><strong>${fmt(actions.length)}</strong><small>已提交的处理记录</small></div></div><section class="card weekly-assignment-card"><div class="card-head"><div><h2>${isAdmin ? "主管分配任务" : "全团队本周任务"}</h2><p>${weekText(batch)} · ${isAdmin ? "输入每人每个板块要完成的数量，点击右上角保存" : "可查看全团队任务，并可协助处理任何负责人的商品"}</p></div><span class="pill pill-blue">${isAdmin ? "可编辑" : "只读"}</span></div><div class="card-body table-scroll"><table class="data-table task-table">${taskColgroup}<thead><tr><th>组员</th>${TASK_BOARDS.map((task) => `<th class="num">${escapeHtml(task.label)}</th>`).join("")}<th class="num">任务合计</th></tr></thead><tbody>${report.map((person) => `<tr><td><b>${escapeHtml(person.owner)}</b></td>${TASK_BOARDS.map((task) => `<td class="num">${isAdmin ? `<input class="task-input" type="number" min="0" step="1" data-task-owner="${attr(person.owner)}" data-task-board="${task.key}" value="${assignmentValue(person.owner, task.key)}">` : `<b>${fmt(assignmentValue(person.owner, task.key))}</b>`}</td>`).join("")}<td class="num"><b>${fmt(ownerTotal(person.owner))}</b></td></tr>`).join("")}<tr class="total-row"><td>板块合计</td>${TASK_BOARDS.map((task) => `<td class="num">${fmt(report.reduce((sum, person) => sum + assignmentValue(person.owner, task.key), 0))}</td>`).join("")}<td class="num"><b>${fmt(assignedTotal)}</b></td></tr></tbody></table></div></section><section class="card weekly-progress-card"><div class="card-head"><div><h2>任务完成进度</h2><p>每格显示“已完成 / 已分配”，同商品多板块分别计数</p></div><span class="pill pill-green">${report.length} 名组员</span></div><div class="card-body table-scroll"><table class="data-table task-progress-table">${taskColgroup}<thead><tr><th>组员</th>${TASK_BOARDS.map((task) => `<th class="num">${escapeHtml(task.label)}</th>`).join("")}<th class="num">整体进度</th></tr></thead><tbody>${report.map((person) => `<tr><td><div class="team-person"><span class="mini-avatar">${escapeHtml(firstChar(person.owner))}</span><div><b>${escapeHtml(person.owner)}</b><small>${person.completed} / ${person.target}</small></div></div></td>${person.tasks.map((task) => `<td class="num"><div class="task-progress-cell ${task.target === 0 ? "empty" : task.completed >= task.target ? "done" : task.completed > 0 ? "doing" : ""}"><b>${task.completed} / ${task.target}</b><span>${task.target ? task.rate.toFixed(0) + "%" : "未分配"}</span></div></td>`).join("")}<td class="num"><div class="task-total-progress"><b>${person.rate.toFixed(1)}%</b><span>${person.completed} / ${person.target}</span><div class="progress"><i style="width:${person.rate}%;background:${person.rate >= 100 ? "var(--green)" : person.rate >= 50 ? "var(--blue)" : "var(--orange)"}"></i></div></div></td></tr>`).join("") || `<tr><td colspan="${TASK_BOARDS.length + 2}"><div class="empty"><b>暂无可分配组员</b><span>请先建立组员账号或导入带负责人的数据</span></div></td></tr>`}</tbody></table></div></section>`;
   }
 
   async function saveWeeklyAssignments() {
@@ -1406,7 +1553,7 @@
     const roleOptions = (person) => isCreator
       ? ["组员", "主管", "创作者"].map((role) => `<option ${person.role === role ? "selected" : ""}>${role}</option>`).join("")
       : `<option selected>${escapeHtml(person.role)}</option>`;
-    $("#content").innerHTML = `<div class="page-head"><div><h1>账号与权限</h1><p>${isCreator ? "创作者可以管理所有账号、创建账号和归档账号。" : isSupervisor ? "主管可以维护组员信息，但不能创建、归档或修改主管/创作者。" : "你只能查看自己的账号信息。"}</p></div><div class="page-actions"><span class="pill ${isCreator ? "pill-purple" : "pill-green"}">${escapeHtml(profile.role)}</span></div></div><div class="settings-grid"><section class="card profile-card"><div class="profile-avatar">${escapeHtml(firstChar(profile.name))}</div><h2>${escapeHtml(profile.name)}</h2><p>${escapeHtml(profile.role)} · ${escapeHtml(profile.login_name || state.session?.user?.email || "")}</p><div class="profile-meta"><div><span>登录用户名</span><b>${escapeHtml(profile.login_name || state.session?.user?.email || "—")}</b></div><div><span>账号状态</span><b class="good">在职</b></div><div><span>当前批次</span><b>${state.currentBatch ? `第 ${state.currentBatch.week_no} 周` : "未导入"}</b></div><div><span>登录方式</span><b>用户名 + 密码</b></div></div><button class="btn btn-danger btn-wide" style="margin-top:16px" data-action="logout">退出登录</button></section><section class="card"><div class="card-head"><div><h2>团队成员</h2><p>${isCreator ? "创作者可编辑、改名、重置密码和归档所有账号" : isSupervisor ? "主管只能编辑组员，不能创建或归档账号" : "仅显示本人账号"}</p></div>${isCreator ? `<button class="btn btn-sm btn-primary" data-action="open-create-account">＋ 新建账号</button>` : ""}</div><div class="card-body" style="padding:0">${canViewTeam ? `<div style="overflow:auto"><table class="account-table"><thead><tr><th>姓名</th><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.profiles.map((person) => { const editable = canEditPerson(person); const self = person.id === profile.id; const resetAllowed = isCreator || (isSupervisor && person.role === "组员"); return `<tr><td><input id="profileName-${person.id}" value="${attr(person.name)}" ${editable ? "" : "disabled"}></td><td class="mono">${escapeHtml(person.login_name || "—")}${self ? ` <span class="pill pill-purple">当前账号</span>` : ""}</td><td><select id="profileRole-${person.id}" ${isCreator && !self ? "" : "disabled"}>${roleOptions(person)}</select></td><td><select id="profileActive-${person.id}" ${editable && !self ? "" : "disabled"}><option value="true" ${person.active ? "selected" : ""}>在职</option><option value="false" ${!person.active ? "selected" : ""}>离职</option></select></td><td><div class="account-actions">${editable ? `<button class="link-btn" data-action="save-profile" data-id="${person.id}">保存资料</button>` : ""}${resetAllowed ? `<button class="link-btn" data-action="open-reset-password" data-id="${person.id}">重置密码</button>` : ""}${isCreator ? `<button class="link-btn" data-action="open-rename-username" data-id="${person.id}">改用户名</button>` : ""}${isCreator && !self ? `<button class="link-btn danger-text" data-action="archive-account" data-id="${person.id}">归档账号</button>` : ""}</div></td></tr>`; }).join("")}</tbody></table></div>` : `<div class="empty"><b>${escapeHtml(profile.name)}</b><span>组员账号仅能查看自己负责的商品和自己的处理记录</span></div>`}</div></section></div><section class="card" style="margin-top:16px"><div class="card-head"><div><h2>角色权限</h2><p>账号操作由数据库权限和 Edge Function 双重校验</p></div></div><div class="card-body setting-note"><b>创作者：</b>可修改所有人的信息、创建账号、修改用户名、重置密码、归档账号，并可使用全部数据管理功能。<br><b>主管：</b>只能维护组员姓名、在职/离职状态和密码；不能修改创作者/其他主管，也不能创建或归档账号。<br><b>组员：</b>只能查看自己的产品、处理记录和周任务。<br><b>登录：</b>组员输入用户名 + 密码，不需要真实邮箱。<br><b>归档：</b>归档后账号无法登录，历史处理记录仍然保留。Service Role Key 只存在 Edge Function 中，不会进入网页。</div></section>`;
+    $("#content").innerHTML = `<div class="page-head"><div><h1>账号与权限</h1><p>${isCreator ? "创作者可以管理所有账号、创建账号和归档账号。" : isSupervisor ? "主管可以维护组员信息，但不能创建、归档或修改主管/创作者。" : "你只能查看自己的账号信息。"}</p></div><div class="page-actions"><span class="pill ${isCreator ? "pill-purple" : "pill-green"}">${escapeHtml(profile.role)}</span></div></div><div class="settings-grid"><section class="card profile-card"><div class="profile-avatar">${escapeHtml(firstChar(profile.name))}</div><h2>${escapeHtml(profile.name)}</h2><p>${escapeHtml(profile.role)} · ${escapeHtml(profile.login_name || state.session?.user?.email || "")}</p><div class="profile-meta"><div><span>登录用户名</span><b>${escapeHtml(profile.login_name || state.session?.user?.email || "—")}</b></div><div><span>账号状态</span><b class="good">在职</b></div><div><span>当前批次</span><b>${state.currentBatch ? `第 ${state.currentBatch.week_no} 周` : "未导入"}</b></div><div><span>登录方式</span><b>用户名 + 密码</b></div></div><button class="btn btn-danger btn-wide" style="margin-top:16px" data-action="logout">退出登录</button></section><section class="card"><div class="card-head"><div><h2>团队成员</h2><p>${isCreator ? "创作者可编辑、改名、重置密码和归档所有账号" : isSupervisor ? "主管只能编辑组员，不能创建或归档账号" : "仅显示本人账号"}</p></div>${isCreator ? `<button class="btn btn-sm btn-primary" data-action="open-create-account">＋ 新建账号</button>` : ""}</div><div class="card-body" style="padding:0">${canViewTeam ? `<div style="overflow:auto"><table class="account-table"><thead><tr><th>姓名</th><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.profiles.map((person) => { const editable = canEditPerson(person); const self = person.id === profile.id; const resetAllowed = isCreator || (isSupervisor && person.role === "组员"); return `<tr><td><input id="profileName-${person.id}" value="${attr(person.name)}" ${editable ? "" : "disabled"}></td><td class="mono">${escapeHtml(person.login_name || "—")}${self ? ` <span class="pill pill-purple">当前账号</span>` : ""}</td><td><select id="profileRole-${person.id}" ${isCreator && !self ? "" : "disabled"}>${roleOptions(person)}</select></td><td><select id="profileActive-${person.id}" ${editable && !self ? "" : "disabled"}><option value="true" ${person.active ? "selected" : ""}>在职</option><option value="false" ${!person.active ? "selected" : ""}>离职</option></select></td><td><div class="account-actions">${editable ? `<button class="link-btn" data-action="save-profile" data-id="${person.id}">保存资料</button>` : ""}${resetAllowed ? `<button class="link-btn" data-action="open-reset-password" data-id="${person.id}">重置密码</button>` : ""}${isCreator ? `<button class="link-btn" data-action="open-rename-username" data-id="${person.id}">改用户名</button>` : ""}${isCreator && !self ? `<button class="link-btn danger-text" data-action="archive-account" data-id="${person.id}">归档账号</button>` : ""}</div></td></tr>`; }).join("")}</tbody></table></div>` : `<div class="empty"><b>${escapeHtml(profile.name)}</b><span>组员可查看全团队运营数据，并协助处理其他负责人的商品；账号与任务分配仍由管理角色维护</span></div>`}</div></section></div><section class="card" style="margin-top:16px"><div class="card-head"><div><h2>角色权限</h2><p>账号操作由数据库权限和 Edge Function 双重校验</p></div></div><div class="card-body setting-note"><b>创作者：</b>可修改所有人的信息、创建账号、修改用户名、重置密码、归档账号，并可使用全部数据管理功能。<br><b>主管：</b>只能维护组员姓名、在职/离职状态和密码；不能修改创作者/其他主管，也不能创建或归档账号。<br><b>组员：</b>可查看全团队产品、处理记录和周任务，也可协助处理其他负责人的商品；不能管理账号或任务分配。<br><b>登录：</b>组员输入用户名 + 密码，不需要真实邮箱。<br><b>归档：</b>归档后账号无法登录，历史处理记录仍然保留。Service Role Key 只存在 Edge Function 中，不会进入网页。</div></section>`;
   }
   async function saveProfile(id) {
     try {

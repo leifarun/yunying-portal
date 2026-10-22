@@ -268,6 +268,62 @@ a { color: var(--blue); text-decoration: none; }
 .tag-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag-list .pill { line-height: 16px; }
 
+/* Shared sticky table header and horizontal scrollbar */
+body.table-hscroll-active .content { padding-bottom: 72px; }
+.fixed-table-header {
+  position: fixed;
+  z-index: 19;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-strong);
+  background: #f8fafc;
+  box-shadow: 0 10px 22px rgba(18, 35, 66, .12);
+}
+.fixed-table-header > table {
+  margin: 0;
+  background: #f8fafc;
+}
+.fixed-table-header .data-table th {
+  border-bottom: 0;
+  background: #f8fafc;
+}
+.fixed-table-hscroll {
+  position: fixed;
+  z-index: 24;
+  bottom: 0;
+  height: 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-top: 1px solid #d5ddea;
+  background: rgba(248, 250, 252, .97);
+  box-shadow: 0 -5px 16px rgba(18, 35, 66, .08);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #9aa8bc #edf1f6;
+}
+.fixed-table-hscroll-spacer { height: 1px; }
+.fixed-table-hscroll::-webkit-scrollbar { height: 16px; }
+.fixed-table-hscroll::-webkit-scrollbar-track { background: #edf1f6; }
+.fixed-table-hscroll::-webkit-scrollbar-thumb { border: 3px solid #edf1f6; border-radius: 999px; background: #9aa8bc; }
+.table-sort-head { display: flex; align-items: center; justify-content: space-between; gap: 5px; width: 100%; }
+.data-table th.num .table-sort-head { justify-content: flex-end; }
+.table-sort-controls { display: inline-flex; flex: none; flex-direction: column; gap: 0; }
+.table-sort-btn {
+  width: 13px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #aeb8c8;
+  font-size: 7px;
+  line-height: 8px;
+  cursor: pointer;
+}
+.table-sort-btn:hover { color: var(--blue); }
+.table-sort-btn.active { color: var(--blue); }
+@media print {
+  .fixed-table-header, .fixed-table-hscroll { display: none !important; }
+}
+
 /* Weekly */
 .week-selector { display: flex; align-items: center; gap: 10px; }
 .week-selector select { min-width: 230px; }
