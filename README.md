@@ -2,7 +2,7 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=19`  
+当前线上版本：`v=20`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
 数据库迁移：`001`–`007` 均已应用
 
@@ -12,6 +12,7 @@
 - 数据表支持表头吸顶、底部固定横向滑块和升序/降序排序
 - 商品表列宽按表头文字与排序控件自适应
 - 阈值与公式页的锁定项、只读项可正常显示阈值或“—”
+- 创作者可在“账号与权限”中自定义网站名称，更新浏览器标签和品牌显示
 
 ## 已实现
 
@@ -61,7 +62,9 @@
 
 `supabase/migrations/007_team_shared_data.sql`
 
-`001`–`007` 均已应用到当前项目，后续重建时请按文件名顺序执行。
+`supabase/migrations/008_app_settings.sql`
+
+`001`–`007` 已应用到当前项目。`008_app_settings.sql` 为网站名称共享配置，需在 Supabase SQL Editor 执行后团队名称同步才会生效；后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -135,6 +138,7 @@ Supabase 提供的是数据库、认证和存储，不会自动托管这个静�
 - 创作者：修改所有人、创建账号、改用户名、重置密码、归档账号
 - 主管：只能维护组员姓名、在职/离职状态和密码
 - 组员：只读自己的账号信息；可查看全团队运营数据并协助处理其他负责人的商品，但不能管理账号或任务分配
+- 网站名称：仅创作者可修改；主管和组员只能查看应用后的名称
 
 ## 导入模板
 
@@ -183,7 +187,8 @@ yunying-portal/
 │     ├─ 004_weekly_task_assignments.sql
 │     ├─ 005_creator_permissions.sql
 │     ├─ 006_split_slow_task_boards.sql
-│     └─ 007_team_shared_data.sql
+│     ├─ 007_team_shared_data.sql
+│     └─ 008_app_settings.sql
 ├─ README.md
 ├─ CHANGELOG.md
 └─ PROJECT_STATE.md

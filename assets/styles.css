@@ -711,4 +711,10 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
 .task-progress-table .task-total-progress { margin-left: auto; margin-right: auto; }
 .task-progress-table td:first-child .team-person,
 .task-progress-table td:first-child .progress { margin-left: 0; }
+.site-name-setting { margin-bottom: 16px; }
+.site-name-form { display: flex; align-items: flex-end; gap: 10px; }
+.site-name-form label { flex: 1; display: grid; gap: 6px; color: var(--ink-2); font-size: 11px; font-weight: 600; }
+.site-name-form input { width: 100%; height: 38px; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; color: var(--ink); font-size: 12px; }
+.site-name-form input:focus { outline: none; border-color: #91b4fb; box-shadow: 0 0 0 3px rgba(47,111,237,.08); }
+@media (max-width: 640px) { .site-name-form { align-items: stretch; flex-direction: column; } }
 .account-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 240px; }

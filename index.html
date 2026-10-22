@@ -6,17 +6,17 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="noindex,nofollow">
   <title>运营三部 · 内部运营中台</title>
-  <link rel="stylesheet" href="./assets/styles.css?v=19">
+  <link rel="stylesheet" href="./assets/styles.css?v=20">
   <script defer src="./vendor/supabase.js"></script>
   <script defer src="./vendor/xlsx.full.min.js"></script>
-  <script defer src="./assets/config.js?v=19"></script>
-  <script defer src="./assets/app.js?v=19"></script>
+  <script defer src="./assets/config.js?v=20"></script>
+  <script defer src="./assets/app.js?v=20"></script>
 </head>
 <body>
   <div id="boot" class="boot-screen">
     <div class="boot-mark">运</div>
     <div>
-      <strong>运营三部 · 内部运营中台</strong>
+      <strong id="bootSiteName">运营三部 · 内部运营中台</strong>
       <p>正在连接团队工作区…</p>
     </div>
   </div>
@@ -36,7 +36,7 @@
       <div class="auth-form-wrap">
         <div class="brand-lockup">
           <div class="brand-icon">运</div>
-          <div><strong>运营三部</strong><span>内部运营中台</span></div>
+          <div><strong id="authSiteNamePrimary">运营三部</strong><span id="authSiteNameSecondary">内部运营中台</span></div>
         </div>
         <h2>登录工作台</h2>
         <p class="auth-sub">账号由主管直接创建，组员无需提供邮箱，不支持自助注册。</p>
@@ -59,7 +59,7 @@
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-brand">
         <div class="brand-mark">运</div>
-        <div><b>运营三部</b><span>内部运营中台</span></div>
+        <div><b id="sidebarSiteNamePrimary">运营三部</b><span id="sidebarSiteNameSecondary">内部运营中台</span></div>
       </div>
       <div class="batch-card">
         <div class="batch-top"><span>当前数据批次</span><span id="batchStatePill" class="pill pill-green">已生效</span></div>
