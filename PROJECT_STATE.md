@@ -2,6 +2,9 @@
 
 最后更新：2026-10-22
 
+当前线上版本：`v=18`  
+状态：已发布，GitHub Pages 构建成功
+
 ## 一、如果这是新的 Codex 对话
 
 先阅读本文件，再检查代码。不要根据旧聊天猜测，以本文件和当前代码为准。
@@ -11,6 +14,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
+- 当前静态资源版本：`v=18`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -84,7 +88,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 静态资源缓存版本已更新，部署后不会继续加载旧的“低/中潜力合并”任务表。
+- 当前静态资源缓存版本为 `v=18`，部署后不会继续加载旧的“低/中潜力合并”任务表。
 
 计数规则：
 
@@ -167,7 +171,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/004_weekly_task_assignments.sql`
 - `supabase/migrations/005_creator_permissions.sql`
 - `supabase/migrations/006_split_slow_task_boards.sql`
-- `supabase/migrations/007_team_shared_data.sql`（已应用）
+- `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
 
 ## 五、导入与存储策略
 
