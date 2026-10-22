@@ -2,7 +2,7 @@
 
 最后更新：2026-10-22
 
-当前线上版本：`v=21`  
+当前线上版本：`v=22`  
 状态：已发布，GitHub Pages 构建成功  
 最近发布：处理记录商品字段拆分、表头吸顶/排序/自适应列宽、阈值页修复  
 数据库迁移：`001`–`008` 均已应用并验证
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=21`
+- 当前静态资源版本：`v=22`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -71,6 +71,9 @@
 - 处理状态统一为“已处理”
 - 不再采集预期结果、跟进日期、待复核、已完成、已关闭
 - 新动作保存完整指标快照
+- 处理记录按时间线进度卡展示，自动比较本次处理后到下一次处理或当前的指标变化
+- 指标变化用绿色/红色/蓝色和升降箭头区分改善、变差与中性变化
+- 产品处理弹窗新增“每周快照”表格，按导入周展示关键指标环比
 - 处理记录表按 ASIN、MSKU、FNSKU、店铺四列展示商品信息
 
 ### 每周任务分配
@@ -92,7 +95,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=21`，部署后不会继续加载旧的“低/中潜力合并”任务表。
+- 当前静态资源缓存版本为 `v=22`，部署后不会继续加载旧的“低/中潜力合并”任务表。
 
 计数规则：
 
@@ -161,6 +164,7 @@
 - `thresholds`
 - `weekly_issue_stats`
 - `weekly_task_assignments`
+- `product_week_snapshots`
 
 ### Edge Function
 
@@ -185,6 +189,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/006_split_slow_task_boards.sql`
 - `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
 - `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
+- `supabase/migrations/009_product_week_snapshots.sql`（产品周快照与历史回填，需应用）
 
 ## 五、导入与存储策略
 

@@ -1265,30 +1265,165 @@
     return `<div class="judgment-chain">${steps.map((step) => `<div class="judgment-step"><div class="judgment-index tone-${step.tone}">${step.no}</div><div class="judgment-main"><div class="judgment-title"><b>${step.label}</b><span class="judgment-actual">${step.actual}</span><span class="judgment-target">${step.target}</span></div><div class="judgment-progress"><i style="width:${(step.ratio * 100).toFixed(1)}%;background:${step.tone === "red" ? "var(--red)" : step.tone === "orange" ? "var(--orange)" : step.tone === "gray" ? "var(--muted-2)" : "var(--green)"}"></i></div></div><span class="pill pill-${step.tone}">${step.status}</span></div>`).join("")}</div>`;
   }
 
-  function compareMetricHtml(label, before, after, formatter, direction = "up") {
-    const hasBefore = before !== null && before !== undefined && before !== "";
-    if (!hasBefore) return `<div class="change-metric"><span>${label}</span><div class="change-values"><b>—</b><i>→</i><b>${formatter(after)}</b></div><small class="muted">无历史快照</small></div>`;
+  function snapshotHasMetrics(snapshot) {
+    return Boolean(snapshot && ["sales", "fba_avail", "imp", "clk", "ad_orders"].some((key) => Object.prototype.hasOwnProperty.call(snapshot, key)));
+  }
+
+  function snapshotMetric(snapshot, key) {
+    const row = snapshot || {};
+    const sales = num(row.sales);
+    const fbaAvail = num(row.fba_avail);
+    const imp = num(row.imp);
+    const clk = num(row.clk);
+    const adOrders = num(row.ad_orders);
+    if (key === "sales") return sales;
+    if (key === "fba_avail") return fbaAvail;
+    if (key === "imp") return imp;
+    if (key === "clk") return clk;
+    if (key === "ctr") return imp > 0 ? clk / imp : pctValue(row.ctr);
+    if (key === "cvr") return clk > 0 ? adOrders / clk : pctValue(row.cvr);
+    if (key === "ad_spend") return num(row.ad_spend);
+    if (key === "ad_orders") return adOrders;
+    if (key === "refund_qty") return num(row.refund_qty);
+    if (key === "score") return num(row.score);
+    if (key === "kxb") return sales > 0 ? fbaAvail / sales : fbaAvail > 0 ? 999 : 0;
+    return num(row[key]);
+  }
+
+  function metricDeltaPresentation(delta, direction = "up", isPct = false) {
+    const flat = Math.abs(delta) < 1e-9;
+    const rising = delta > 0;
+    const good = direction === "neutral" ? null : direction === "down" ? !rising : rising;
+    const tone = flat ? "flat" : good === null ? "neutral" : good ? "good" : "bad";
+    const amount = isPct ? `${Math.abs(delta * 100).toFixed(2)}pp` : fmt(Math.abs(delta), 2);
+    return {
+      tone,
+      text: flat ? "持平" : `${rising ? "↑" : "↓"} ${amount}`,
+      label: flat ? "无变化" : direction === "neutral" ? (rising ? "上升" : "下降") : good ? "改善" : "变差"
+    };
+  }
+
+  function deltaBadgeHtml(delta, direction = "up", isPct = false) {
+    const deltaInfo = metricDeltaPresentation(delta, direction, isPct);
+    return `<span class="metric-delta ${deltaInfo.tone}"><b>${deltaInfo.text}</b><small>${deltaInfo.label}</small></span>`;
+  }
+
+  function compareMetricHtml(label, before, after, formatter, direction = "up", isPct = false, hasBefore = true, hasAfter = true) {
+    if (!hasBefore || !hasAfter) {
+      return `<div class="action-delta-row flat"><span class="delta-label">${label}</span><div class="delta-values"><b>—</b><i>→</i><b>${hasAfter ? formatter(after) : "—"}</b></div><span class="metric-delta flat"><b>无快照</b><small>无法比较</small></span></div>`;
+    }
     const delta = Number(after || 0) - Number(before || 0);
-    let deltaText = direction === "pct" ? `${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(2)}pp` : `${delta >= 0 ? "+" : ""}${fmt(delta, 2)}`;
-    const good = direction === "down" ? delta < 0 : delta > 0;
-    const tone = direction === "neutral" || Math.abs(delta) < 1e-9 ? "muted" : good ? "good" : "bad";
-    return `<div class="change-metric"><span>${label}</span><div class="change-values"><b>${formatter(before)}</b><i>→</i><b>${formatter(after)}</b></div><small class="${tone}">${deltaText}</small></div>`;
+    const deltaInfo = metricDeltaPresentation(delta, direction, isPct);
+    return `<div class="action-delta-row ${deltaInfo.tone}"><span class="delta-label">${label}</span><div class="delta-values"><b>${formatter(before)}</b><i>→</i><b>${formatter(after)}</b></div><span class="metric-delta ${deltaInfo.tone}"><b>${deltaInfo.text}</b><small>${deltaInfo.label}</small></span></div>`;
   }
 
   function actionHistoryHtml(product, history) {
     if (!history.length) return `<div class="empty compact-empty"><b>还没有历史处理记录</b><span>本次提交后会生成第一条记录和指标快照</span></div>`;
-    return `<div class="action-history-list">${history.map((action) => { const snap = action.snapshot || {}; return `<article class="history-card"><div class="history-head"><div><b>${formatFullDateTime(action.created_at)}</b><span>${escapeHtml(action.user_name || "未知")} · ${escapeHtml(action.action_type || "处理")} · ${escapeHtml(BOARD[action.board]?.label || action.board || "")}</span></div><span class="pill pill-blue">历史记录</span></div><p>${escapeHtml(action.note || "")}</p><div class="change-grid">${compareMetricHtml("销量", snap.sales, product.sales, (v) => fmt(v))}${compareMetricHtml("FBA可售", snap.fba_avail, product.fba_avail, (v) => fmt(v), "neutral")}${compareMetricHtml("展示", snap.imp, product.imp, (v) => fmt(v))}${compareMetricHtml("点击", snap.clk, product.clk, (v) => fmt(v))}${compareMetricHtml("广告单", snap.ad_orders, product.ad_orders, (v) => fmt(v))}${compareMetricHtml("CTR", snap.ctr, product.ctr, (v) => fmtPct(v), "pct")}${compareMetricHtml("广告CVR", snap.cvr, product.cvr, (v) => fmtPct(v), "pct")}${compareMetricHtml("库销比", snap.kxb, product.kxb, (v) => Number(v) >= 900 ? "∞" : Number(v).toFixed(1), "down")}</div></article>`; }).join("")}</div>`;
+    const metrics = [
+      { key: "sales", label: "销量", direction: "up", formatter: (value) => fmt(value) },
+      { key: "fba_avail", label: "FBA可售", direction: "neutral", formatter: (value) => fmt(value) },
+      { key: "imp", label: "展示", direction: "up", formatter: (value) => fmt(value) },
+      { key: "clk", label: "点击", direction: "up", formatter: (value) => fmt(value) },
+      { key: "ctr", label: "CTR", direction: "up", formatter: (value) => fmtPct(value), isPct: true },
+      { key: "cvr", label: "广告CVR", direction: "up", formatter: (value) => fmtPct(value), isPct: true },
+      { key: "ad_spend", label: "广告花费", direction: "down", formatter: (value) => fmtMoney(value) },
+      { key: "ad_orders", label: "广告单", direction: "up", formatter: (value) => fmt(value) },
+      { key: "refund_qty", label: "退款量", direction: "down", formatter: (value) => fmt(value) },
+      { key: "kxb", label: "库销比", direction: "down", formatter: (value) => Number(value) >= 900 ? "∞" : Number(value).toFixed(1) }
+    ];
+    return `<div class="action-history-list">${history.map((action, index) => {
+      const snap = action.snapshot || {};
+      const afterSnap = index === 0 ? product : history[index - 1]?.snapshot;
+      const beforeReady = snapshotHasMetrics(snap);
+      const afterReady = index === 0 || snapshotHasMetrics(afterSnap);
+      const compareTitle = index === 0 ? "本次处理后 → 当前" : "本次处理后 → 下一次处理";
+      return `<article class="history-card action-progress-card"><span class="history-timeline-dot"></span><div class="history-head"><div><b>${formatFullDateTime(action.created_at)}</b><span>${escapeHtml(action.user_name || "未知")} · ${escapeHtml(action.action_type || "处理")} · ${escapeHtml(BOARD[action.board]?.label || action.board || "")}</span></div><span class="pill pill-blue">${index === 0 ? "最近处理" : "历史处理"}</span></div><p>${escapeHtml(action.note || "")}</p><div class="action-compare-title"><b>${compareTitle}</b><span>${beforeReady && afterReady ? "绿色代表改善，红色代表变差，灰色代表中性变化" : "这条旧记录缺少完整指标快照，暂时无法比较"}</span></div>${beforeReady && afterReady ? `<div class="action-delta-grid">${metrics.map((metric) => compareMetricHtml(metric.label, snapshotMetric(snap, metric.key), snapshotMetric(afterSnap, metric.key), metric.formatter, metric.direction, metric.isPct, beforeReady, afterReady)).join("")}</div>` : ""}</article>`;
+    }).join("")}</div>`;
   }
 
-  function openAction(msku, shop, boardKey) {
+  function buildDemoWeekSnapshots(product) {
+    const batch = state.currentBatch || state.batches[0];
+    if (!batch) return [];
+    const startDate = parseDateOnly(batch.week_start);
+    return [0, 1, 2].map((index) => {
+      const start = new Date(startDate);
+      start.setDate(start.getDate() - index * 7);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      const factor = Math.max(0.45, 1 - index * 0.17);
+      return {
+        week_no: batch.week_no - index,
+        week_start: dateOnly(start),
+        week_end: dateOnly(end),
+        metrics: index === 0 ? { ...product } : {
+          ...product,
+          sales: Math.max(0, Math.round(product.sales * factor)),
+          fba_avail: Math.round(product.fba_avail * (1 + index * 0.08)),
+          imp: Math.round(product.imp * factor),
+          clk: Math.round(product.clk * factor),
+          ad_spend: Math.round(product.ad_spend * (1 + index * 0.06) * 100) / 100,
+          ad_orders: Math.max(0, Math.round(product.ad_orders * factor)),
+          refund_qty: Math.max(0, Math.round(product.refund_qty * (1 + index * 0.5)))
+        }
+      };
+    });
+  }
+
+  function weeklySnapshotTable(snapshots) {
+    if (!snapshots || !snapshots.length) {
+      return `<div class="weekly-snapshot-empty"><b>暂时没有周快照</b><span>下次主管导入新一周数据后，系统会自动按周留档。</span></div>`;
+    }
+    const metrics = [
+      { key: "sales", label: "销量", direction: "up", formatter: (value) => fmt(value) },
+      { key: "fba_avail", label: "FBA可售", direction: "neutral", formatter: (value) => fmt(value) },
+      { key: "imp", label: "展示", direction: "up", formatter: (value) => fmt(value) },
+      { key: "clk", label: "点击", direction: "up", formatter: (value) => fmt(value) },
+      { key: "ctr", label: "CTR", direction: "up", formatter: (value) => fmtPct(value), isPct: true },
+      { key: "cvr", label: "广告CVR", direction: "up", formatter: (value) => fmtPct(value), isPct: true },
+      { key: "ad_spend", label: "广告花费", direction: "down", formatter: (value) => fmtMoney(value) },
+      { key: "ad_orders", label: "广告单", direction: "up", formatter: (value) => fmt(value) },
+      { key: "refund_qty", label: "退款量", direction: "down", formatter: (value) => fmt(value) },
+      { key: "score", label: "评分", direction: "up", formatter: (value) => Number(value) > 0 ? value : "—" }
+    ];
+    return `<div class="weekly-snapshot-panel"><div class="weekly-snapshot-scroll"><table class="weekly-snapshot-table"><thead><tr><th>周期</th>${metrics.map((metric) => `<th class="num">${metric.label}</th>`).join("")}</tr></thead><tbody>${snapshots.map((row, index) => {
+      const previous = snapshots[index + 1];
+      const metricsMap = row.metrics || {};
+      const previousMap = previous?.metrics || {};
+      return `<tr><td class="week-label"><b>第${row.week_no}周</b><span>${formatDate(row.week_start)}–${formatDate(row.week_end)}</span></td>${metrics.map((metric) => {
+        const currentValue = snapshotMetric(metricsMap, metric.key);
+        const previousValue = previous ? snapshotMetric(previousMap, metric.key) : null;
+        return `<td class="num snapshot-metric"><b>${metric.formatter(currentValue)}</b>${previous ? deltaBadgeHtml(currentValue - previousValue, metric.direction, metric.isPct) : `<span class="metric-delta base"><b>基期</b><small>无环比</small></span>`}</td>`;
+      }).join("")}</tr>`;
+    }).join("")}</tbody></table></div></div>`;
+  }
+
+  async function openAction(msku, shop, boardKey) {
     const product = state.products.find((p) => p.msku === msku && p.shop === shop);
     if (!product) { toast("没有找到这个商品", "error"); return; }
     const defaultBoard = BOARD[boardKey] ? boardKey : resolveActionBoard(product, "all");
     const history = state.actions.filter((action) => action.msku === msku && action.shop === shop).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    let weekSnapshots = state.demo ? buildDemoWeekSnapshots(product) : [];
+    if (!state.demo) {
+      try {
+        const { data, error } = await sb.from("product_week_snapshots")
+          .select("week_no,week_start,week_end,metrics")
+          .eq("shop", shop)
+          .eq("msku", msku)
+          .order("week_start", { ascending: false })
+          .limit(24);
+        if (error) throw error;
+        weekSnapshots = data || [];
+      } catch (error) {
+        console.warn("product_week_snapshots unavailable", error);
+      }
+      if (!weekSnapshots.length && state.currentBatch) {
+        weekSnapshots = [{ week_no: state.currentBatch.week_no, week_start: state.currentBatch.week_start, week_end: state.currentBatch.week_end, metrics: { ...product } }];
+      }
+    }
     $("#modal").className = "modal xwide";
     $("#modal").dataset.msku = product.msku;
     $("#modal").dataset.shop = product.shop;
-    $("#modal").innerHTML = `<div class="modal-head"><div><h2>${escapeHtml(product.msku)}</h2><div class="modal-subline">${escapeHtml(product.shop)} · ${escapeHtml(product.country || "—")} · 负责人 ${escapeHtml(product.owner || "—")}${product.owner && state.profile?.name && product.owner !== state.profile.name ? ` · ${escapeHtml(state.profile.name)} 协助处理，完成计入 ${escapeHtml(product.owner)}` : ""}</div></div><div class="tag-list">${issueTagHtml(product, 5)}</div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body action-modal-body"><div class="detail-grid"><div><span>销量</span><b>${fmt(product.sales)}</b></div><div><span>FBA可售</span><b>${fmt(product.fba_avail)}</b></div><div><span>展示 / 点击</span><b>${fmt(product.imp)} / ${fmt(product.clk)}</b></div><div><span>CTR</span><b class="${product.ctr < thresholdNumber(5, 0.6) / 100 ? "bad" : ""}">${fmtPct(product.ctr)}</b></div><div><span>广告CVR</span><b class="${product.cvr < thresholdNumber(4, 5) / 100 ? "bad" : ""}">${fmtPct(product.cvr)}</b></div><div><span>广告花费</span><b>${fmtMoney(product.ad_spend)}</b></div><div><span>广告订单</span><b>${fmt(product.ad_orders)}</b></div><div><span>退款量</span><b>${fmt(product.refund_qty)}</b></div><div><span>评分</span><b>${product.score || "—"}</b></div><div><span>库销比</span><b class="${product.kxb > thresholdNumber(1, 4) ? "warn" : ""}">${product.kxb >= 900 ? "∞" : product.kxb.toFixed(1)}</b></div></div><section class="action-section"><div class="action-section-head"><div><h3>当前判定链路</h3><p>实际值与所需目标逐级比较，红色或橙色表示当前卡点</p></div><span class="pill ${product.issueKeys.length ? "pill-red" : "pill-green"}">${product.issueKeys.length ? escapeHtml(BOARD[product.issueKeys[0]]?.label || "需优化") : "达标"}</span></div>${judgmentChainHtml(product)}</section><section class="action-section"><div class="action-section-head"><div><h3>历史处理与指标变化</h3><p>每张卡片显示处理当时 → 当前的关键指标</p></div><span class="pill pill-gray">${history.length} 条记录</span></div>${actionHistoryHtml(product, history)}</section><section class="action-section action-form-section"><div class="action-section-head"><div><h3>新增本次处理</h3><p>提交后统一记为“已处理”，并自动保存当前指标快照</p></div></div><div class="form-grid two"><label>优化板块<select id="actionBoard">${BOARD_ORDER.map((key) => `<option value="${key}" ${key === defaultBoard ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select></label><label>动作类型<select id="actionType">${ACTION_TYPES.map((type) => `<option value="${attr(type)}">${escapeHtml(type)}</option>`).join("")}</select></label><label style="grid-column:1/-1">处理动作与依据<span class="field-help">写清楚做了什么、为什么做。提交时会自动记录处理人、时间和当前指标。</span><textarea id="actionNote" placeholder="例：调价 29.90 → 27.90（-6.7%），同时换主图；7 天后观察 CTR 是否从 0.30% 提升到 0.60%"></textarea><div class="phrase-list">${["调价", "换主图", "改五点", "广告否词", "加预算", "报 DOTD", "清货", "翻新"].map((text) => `<button type="button" class="phrase" data-phrase="${attr(text)}">${escapeHtml(text)}</button>`).join("")}</div></label></div></section></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="submit-action">提交处理记录</button></div>`;
+    $("#modal").innerHTML = `<div class="modal-head"><div><h2>${escapeHtml(product.msku)}</h2><div class="modal-subline">${escapeHtml(product.shop)} · ${escapeHtml(product.country || "—")} · 负责人 ${escapeHtml(product.owner || "—")}${product.owner && state.profile?.name && product.owner !== state.profile.name ? ` · ${escapeHtml(state.profile.name)} 协助处理，完成计入 ${escapeHtml(product.owner)}` : ""}</div></div><div class="tag-list">${issueTagHtml(product, 5)}</div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body action-modal-body"><div class="detail-grid"><div><span>销量</span><b>${fmt(product.sales)}</b></div><div><span>FBA可售</span><b>${fmt(product.fba_avail)}</b></div><div><span>展示 / 点击</span><b>${fmt(product.imp)} / ${fmt(product.clk)}</b></div><div><span>CTR</span><b class="${product.ctr < thresholdNumber(5, 0.6) / 100 ? "bad" : ""}">${fmtPct(product.ctr)}</b></div><div><span>广告CVR</span><b class="${product.cvr < thresholdNumber(4, 5) / 100 ? "bad" : ""}">${fmtPct(product.cvr)}</b></div><div><span>广告花费</span><b>${fmtMoney(product.ad_spend)}</b></div><div><span>广告订单</span><b>${fmt(product.ad_orders)}</b></div><div><span>退款量</span><b>${fmt(product.refund_qty)}</b></div><div><span>评分</span><b>${product.score || "—"}</b></div><div><span>库销比</span><b class="${product.kxb > thresholdNumber(1, 4) ? "warn" : ""}">${product.kxb >= 900 ? "∞" : product.kxb.toFixed(1)}</b></div></div><section class="action-section"><div class="action-section-head"><div><h3>当前判定链路</h3><p>实际值与所需目标逐级比较，红色或橙色表示当前卡点</p></div><span class="pill ${product.issueKeys.length ? "pill-red" : "pill-green"}">${product.issueKeys.length ? escapeHtml(BOARD[product.issueKeys[0]]?.label || "需优化") : "达标"}</span></div>${judgmentChainHtml(product)}</section><section class="action-section history-section"><div class="action-section-head"><div><h3>处理记录与周快照</h3><p>处理动作做成进度卡片；每周快照按导入周留档并显示环比升降</p></div><span class="pill pill-gray">${history.length} 条记录</span></div><div class="history-block-title"><div><b>处理进度</b><span>按动作查看处理后的指标变化</span></div></div>${actionHistoryHtml(product, history)}<div class="history-block-title weekly-title"><div><b>每周快照</b><span>本周与上周环比，方便判断趋势</span></div></div>${weeklySnapshotTable(weekSnapshots)}</section><section class="action-section action-form-section"><div class="action-section-head"><div><h3>新增本次处理</h3><p>提交后统一记为“已处理”，并自动保存当前指标快照</p></div></div><div class="form-grid two"><label>优化板块<select id="actionBoard">${BOARD_ORDER.map((key) => `<option value="${key}" ${key === defaultBoard ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select></label><label>动作类型<select id="actionType">${ACTION_TYPES.map((type) => `<option value="${attr(type)}">${escapeHtml(type)}</option>`).join("")}</select></label><label style="grid-column:1/-1">处理动作与依据<span class="field-help">写清楚做了什么、为什么做。提交时会自动记录处理人、时间和当前指标。</span><textarea id="actionNote" placeholder="例：调价 29.90 → 27.90（-6.7%），同时换主图；7 天后观察 CTR 是否从 0.30% 提升到 0.60%"></textarea><div class="phrase-list">${["调价", "换主图", "改五点", "广告否词", "加预算", "报 DOTD", "清货", "翻新"].map((text) => `<button type="button" class="phrase" data-phrase="${attr(text)}">${escapeHtml(text)}</button>`).join("")}</div></label></div></section></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="submit-action">提交处理记录</button></div>`;
     showModal();
     setTimeout(() => $("#actionNote")?.focus(), 80);
   }

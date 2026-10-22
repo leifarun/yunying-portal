@@ -2,7 +2,7 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=21`  
+当前线上版本：`v=22`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
 数据库迁移：`001`–`008` 均已应用
 
@@ -14,6 +14,7 @@
 - 阈值与公式页的锁定项、只读项可正常显示阈值或“—”
 - 创作者可在“账号与权限”中自定义网站名称，更新浏览器标签和品牌显示
 - 启动页缓存自定义名称，刷新时不会先显示旧的固定名称
+- 处理记录以时间线进度卡片显示指标改善/变差，周数据以快照表格显示环比
 
 ## 已实现
 
@@ -29,6 +30,7 @@
 - 单一“处理”入口：当前判定链路、历史处理记录、处理当时 → 当前指标变化、继续写本次动作
 - 处理动作和动作类型统一记录为“已处理”，不再设置待复核、已完成、已关闭等状态
 - 处理记录保留操作人和处理时的完整指标快照，并按 ASIN、MSKU、FNSKU、店铺拆分展示商品信息
+- 产品周快照按导入周保留，当前处理弹窗可对比每周关键指标
 - 处理记录永久保留，不随每周产品数据导入而删除
 - 每周任务分配：主管按组员、按板块设置目标数量，低潜力、中潜力、高潜力分别独立，完成进度按处理商品数统计
 - 团队协作：所有在职成员可查看全团队数据，并可协助处理其他人的商品；完成数计入商品负责人
@@ -73,7 +75,9 @@
 
 `supabase/migrations/008_app_settings.sql`
 
-`001`–`008` 均已应用到当前项目；`008_app_settings.sql` 已启用网站名称全团队共享。后续重建时请按文件名顺序执行。
+`supabase/migrations/009_product_week_snapshots.sql`
+
+`001`–`008` 均已应用到当前项目；`009_product_week_snapshots.sql` 用于产品周快照和历史回填，需在 Supabase SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -197,7 +201,8 @@ yunying-portal/
 │     ├─ 005_creator_permissions.sql
 │     ├─ 006_split_slow_task_boards.sql
 │     ├─ 007_team_shared_data.sql
-│     └─ 008_app_settings.sql
+│     ├─ 008_app_settings.sql
+│     └─ 009_product_week_snapshots.sql
 ├─ DEPLOY_NEW_DEPARTMENT.md
 ├─ README.md
 ├─ CHANGELOG.md
