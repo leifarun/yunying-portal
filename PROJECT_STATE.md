@@ -2,10 +2,10 @@
 
 最后更新：2026-10-22
 
-当前线上版本：`v=25`  
+当前线上版本：`v=26`  
 状态：已发布，GitHub Pages 构建成功  
 最近发布：创作者清理历史记录、十项商品概览、处理指标快照、表头吸顶/排序/自适应列宽  
-数据库迁移：`001`–`009` 均已应用并验证
+数据库迁移：`001`–`009` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
 
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=25`
+- 当前静态资源版本：`v=26`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -100,7 +100,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=25`，部署后不会继续加载旧的“低/中潜力合并”任务表。
+- 当前静态资源缓存版本为 `v=26`，部署后不会继续加载旧的“低/中潜力合并”任务表。
 
 计数规则：
 
@@ -194,6 +194,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
 - `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
 - `supabase/migrations/009_clear_action_history.sql`（已应用；已验证未授权请求会被拒绝）
+- `supabase/migrations/010_clear_action_history_safe_delete.sql`（修复安全删除条件，需应用）
 
 ## 五、导入与存储策略
 

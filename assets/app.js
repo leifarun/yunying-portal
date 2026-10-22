@@ -1478,7 +1478,7 @@
         state.actions = [];
       } else {
         let { data, error } = await sb.rpc("clear_action_history");
-        if (error && (String(error.message || "").includes("clear_action_history") || String(error.message || "").includes("schema cache"))) {
+        if (error && (String(error.message || "").includes("clear_action_history") || String(error.message || "").includes("schema cache") || String(error.message || "").includes("requires a WHERE clause"))) {
           const fallback = await sb.from("actions").delete({ count: "exact" }).neq("id", -1);
           if (fallback.error) throw fallback.error;
           deletedCount = fallback.count ?? beforeCount;

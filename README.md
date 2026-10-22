@@ -2,9 +2,9 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=25`  
+当前线上版本：`v=26`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
-数据库迁移：`001`–`009` 均已应用
+数据库迁移：`001`–`009` 已应用；`010` 待执行
 
 ## 当前发布摘要
 
@@ -79,7 +79,9 @@
 
 `supabase/migrations/009_clear_action_history.sql`
 
-`001`–`009` 均已应用到当前项目；`009_clear_action_history.sql` 已验证仅创作者可以清理全部处理记录。后续重建时请按文件名顺序执行。
+`supabase/migrations/010_clear_action_history_safe_delete.sql`
+
+`001`–`009` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 修复 Supabase 防误删规则对清理函数的拦截，需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -204,7 +206,8 @@ yunying-portal/
 │     ├─ 006_split_slow_task_boards.sql
 │     ├─ 007_team_shared_data.sql
 │     ├─ 008_app_settings.sql
-│     └─ 009_clear_action_history.sql
+│     ├─ 009_clear_action_history.sql
+│     └─ 010_clear_action_history_safe_delete.sql
 ├─ DEPLOY_NEW_DEPARTMENT.md
 ├─ README.md
 ├─ CHANGELOG.md
