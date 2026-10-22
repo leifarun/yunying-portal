@@ -2,7 +2,7 @@
 
 最后更新：2026-10-22
 
-当前线上版本：`v=24`  
+当前线上版本：`v=25`  
 状态：已发布，GitHub Pages 构建成功  
 最近发布：处理记录商品字段拆分、表头吸顶/排序/自适应列宽、阈值页修复  
 数据库迁移：`001`–`008` 均已应用并验证
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=24`
+- 当前静态资源版本：`v=25`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -66,6 +66,10 @@
 
 ### 处理动作
 
+- 处理记录页提供“清理历史记录”按钮，仅创作者可用
+- 清理前需输入“清空全部记录”，确认后同步删除数据库 `actions` 数据
+- 清理不会删除产品、账号和周任务目标，但会同步清空任务完成进度
+
 - 每行只有一个“处理”按钮
 - 同一个弹窗展示：当前判定链路、历史处理记录、处理当时到当前的指标变化、本次处理填写
 - 处理状态统一为“已处理”
@@ -96,7 +100,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=24`，部署后不会继续加载旧的“低/中潜力合并”任务表。
+- 当前静态资源缓存版本为 `v=25`，部署后不会继续加载旧的“低/中潜力合并”任务表。
 
 计数规则：
 
@@ -189,6 +193,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/006_split_slow_task_boards.sql`
 - `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
 - `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
+- `supabase/migrations/009_clear_action_history.sql`（创作者清理处理记录函数，需应用）
 
 ## 五、导入与存储策略
 

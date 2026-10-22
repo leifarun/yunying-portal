@@ -662,6 +662,9 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
 .weekly-snapshot-empty span { font-size: 9.5px; }
 .compact-empty { padding: 24px 16px; }
 .compact-empty { padding: 24px 16px; }
+.clear-history-warning { display: grid; gap: 6px; padding: 14px 15px; border: 1px solid #f1c6ca; border-radius: 10px; background: var(--red-soft); color: #8e2832; font-size: 10.5px; line-height: 1.65; }
+.clear-history-warning b { color: var(--red); font-size: 12px; }
+.clear-history-warning strong { font-size: 13px; }
 .log-table { min-width: 1080px; }
 .log-note { display: block; max-width: 720px; margin-top: 3px; white-space: normal; line-height: 1.6; }
 

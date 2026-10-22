@@ -106,6 +106,7 @@ Publishable Key: sb_publishable_____________________
 6. `supabase/migrations/006_split_slow_task_boards.sql`
 7. `supabase/migrations/007_team_shared_data.sql`
 8. `supabase/migrations/008_app_settings.sql`
+9. `supabase/migrations/009_clear_action_history.sql`
 
 注意：
 
@@ -395,7 +396,7 @@ Excel 负责人：王丹
 
 ## 十二、上线验收清单
 
-- [ ] 新 Supabase 项目的 8 个迁移都执行成功
+- [ ] 新 Supabase 项目的 9 个迁移都执行成功
 - [ ] `app_settings` 表存在
 - [ ] `admin-users` Edge Function 部署成功
 - [ ] `assets/config.js` 已换成新项目 URL 和 Publishable Key
@@ -492,7 +493,7 @@ Excel 负责人：王丹
 请按照手册：
 1. Fork 你自己的 GitHub 仓库
 2. 创建自己的 Supabase 项目
-3. 按顺序执行 001–008 迁移
+3. 按顺序执行 001–009 迁移
 4. 部署 admin-users Edge Function
 5. 修改 assets/config.js
 6. 部署 GitHub Pages

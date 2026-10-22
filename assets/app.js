@@ -734,6 +734,8 @@
     if (action === "cancel-import") { state.pendingImport = null; renderView(); }
     if (action === "export-board") exportBoardCsv();
     if (action === "export-logs") exportActionsCsv();
+    if (action === "open-clear-history") openClearHistoryModal();
+    if (action === "confirm-clear-history") clearActionHistory();
     if (action === "export-weekly") exportWeeklyCsv();
     if (action === "save-profile") saveProfile(actionEl.dataset.id);
     if (action === "save-site-name") saveSiteName();
@@ -1451,7 +1453,49 @@
       if (f.time === "week" && new Date(action.created_at) < startOfWeek(new Date())) return false;
       return true;
     });
-    $("#content").innerHTML = `<div class="page-head"><div><h1>处理记录</h1><p>每次导入只替换产品数据，历史处理记录和当时指标快照永久保留。</p></div><div class="page-actions"><button class="btn" data-action="export-logs">导出记录</button></div></div><div class="filter-bar"><select data-log-filter="user"><option value="">操作人：全部</option>${owners.map((owner) => `<option value="${attr(owner)}" ${state.logFilters.user === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}</select><select data-log-filter="board"><option value="">板块：全部</option>${BOARD_ORDER.map((key) => `<option value="${key}" ${state.logFilters.board === key ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select><select data-log-filter="time"><option value="week" ${state.logFilters.time === "week" ? "selected" : ""}>本周</option><option value="7d" ${state.logFilters.time === "7d" ? "selected" : ""}>近 7 天</option><option value="30d" ${state.logFilters.time === "30d" ? "selected" : ""}>近 30 天</option><option value="" ${!state.logFilters.time ? "selected" : ""}>全部时间</option></select><span class="filter-spacer"></span><span class="muted">${rows.length} 条</span></div><div class="table-card"><div class="table-scroll"><table class="data-table log-table"><thead><tr><th>时间</th><th>操作人</th><th>板块</th><th>ASIN</th><th>MSKU</th><th>FNSKU</th><th>店铺</th><th>处理动作</th></tr></thead><tbody>${rows.length ? rows.map((action) => { const currentProduct = currentProductMap.get(`${action.shop || ""}::${action.msku || ""}`); return `<tr><td>${formatDateTime(action.created_at)}</td><td>${escapeHtml(action.user_name || "—")}</td><td><span class="pill pill-gray">${escapeHtml(BOARD[action.board]?.label || action.board || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.asin || currentProduct?.asin || "—")}</span></td><td><span class="mono">${escapeHtml(action.msku || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.fnsku || currentProduct?.fnsku || "—")}</span></td><td>${escapeHtml(action.shop || currentProduct?.shop || "—")}</td><td><b>${escapeHtml(action.action_type || "处理")}</b><span class="subtle log-note" title="${attr(action.note || "")}">${escapeHtml(action.note || "")}</span></td></tr>`; }).join("") : `<tr><td colspan="8"><div class="empty"><b>当前筛选下没有处理记录</b><span>组员提交处理后会自动出现在这里</span></div></td></tr>`}</tbody></table></div></div>`;
+    $("#content").innerHTML = `<div class="page-head"><div><h1>处理记录</h1><p>每次导入只替换产品数据，历史处理记录和当时指标快照永久保留。</p></div><div class="page-actions"><button class="btn" data-action="export-logs">导出记录</button>${isCreatorRole(state.profile.role) ? `<button class="btn btn-danger" data-action="open-clear-history">清理历史记录</button>` : ""}</div></div><div class="filter-bar"><select data-log-filter="user"><option value="">操作人：全部</option>${owners.map((owner) => `<option value="${attr(owner)}" ${state.logFilters.user === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}</select><select data-log-filter="board"><option value="">板块：全部</option>${BOARD_ORDER.map((key) => `<option value="${key}" ${state.logFilters.board === key ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select><select data-log-filter="time"><option value="week" ${state.logFilters.time === "week" ? "selected" : ""}>本周</option><option value="7d" ${state.logFilters.time === "7d" ? "selected" : ""}>近 7 天</option><option value="30d" ${state.logFilters.time === "30d" ? "selected" : ""}>近 30 天</option><option value="" ${!state.logFilters.time ? "selected" : ""}>全部时间</option></select><span class="filter-spacer"></span><span class="muted">${rows.length} 条</span></div><div class="table-card"><div class="table-scroll"><table class="data-table log-table"><thead><tr><th>时间</th><th>操作人</th><th>板块</th><th>ASIN</th><th>MSKU</th><th>FNSKU</th><th>店铺</th><th>处理动作</th></tr></thead><tbody>${rows.length ? rows.map((action) => { const currentProduct = currentProductMap.get(`${action.shop || ""}::${action.msku || ""}`); return `<tr><td>${formatDateTime(action.created_at)}</td><td>${escapeHtml(action.user_name || "—")}</td><td><span class="pill pill-gray">${escapeHtml(BOARD[action.board]?.label || action.board || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.asin || currentProduct?.asin || "—")}</span></td><td><span class="mono">${escapeHtml(action.msku || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.fnsku || currentProduct?.fnsku || "—")}</span></td><td>${escapeHtml(action.shop || currentProduct?.shop || "—")}</td><td><b>${escapeHtml(action.action_type || "处理")}</b><span class="subtle log-note" title="${attr(action.note || "")}">${escapeHtml(action.note || "")}</span></td></tr>`; }).join("") : `<tr><td colspan="8"><div class="empty"><b>当前筛选下没有处理记录</b><span>组员提交处理后会自动出现在这里</span></div></td></tr>`}</tbody></table></div></div>`;
+  }
+
+  function openClearHistoryModal() {
+    if (!isCreatorRole(state.profile?.role)) { toast("只有创作者可以清理历史处理记录", "error"); return; }
+    if (!state.actions.length) { toast("当前没有可清理的历史处理记录", "success"); return; }
+    $("#modal").className = "modal";
+    $("#modal").innerHTML = `<div class="modal-head"><div><h2>清理历史处理记录</h2><p class="modal-subline">此操作会永久删除全部批次的处理记录</p></div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="clear-history-warning"><b>不可恢复操作</b><span>将清理数据库中的 <strong>${fmt(state.actions.length)}</strong> 条处理记录，并同步影响每周任务完成进度。产品、周任务目标和账号数据不会被删除。</span></div><div class="form-grid"><label style="margin-top:14px">输入“清空全部记录”确认<input id="clearHistoryConfirm" autocomplete="off" placeholder="请输入：清空全部记录"></label></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-danger" data-action="confirm-clear-history">确认清理</button></div>`;
+    showModal();
+    setTimeout(() => $("#clearHistoryConfirm")?.focus(), 80);
+  }
+
+  async function clearActionHistory() {
+    if (!isCreatorRole(state.profile?.role)) { toast("只有创作者可以清理历史处理记录", "error"); return; }
+    const confirmation = $("#clearHistoryConfirm")?.value.trim() || "";
+    if (confirmation !== "清空全部记录") { toast("请输入“清空全部记录”后再确认", "error"); return; }
+    const button = $("[data-action='confirm-clear-history']");
+    if (button) { button.disabled = true; button.textContent = "正在清理…"; }
+    const beforeCount = state.actions.length;
+    try {
+      let deletedCount = beforeCount;
+      if (state.demo) {
+        state.actions = [];
+      } else {
+        let { data, error } = await sb.rpc("clear_action_history");
+        if (error && (String(error.message || "").includes("clear_action_history") || String(error.message || "").includes("schema cache"))) {
+          const fallback = await sb.from("actions").delete({ count: "exact" }).neq("id", -1);
+          if (fallback.error) throw fallback.error;
+          deletedCount = fallback.count ?? beforeCount;
+        } else {
+          if (error) throw error;
+          deletedCount = Number(data ?? beforeCount);
+        }
+        state.actions = [];
+      }
+      closeModal();
+      renderChrome();
+      renderView();
+      toast(`已清理 ${fmt(deletedCount)} 条历史处理记录`, "success");
+    } catch (error) {
+      toast(errorMessage(error), "error");
+      if (button) { button.disabled = false; button.textContent = "确认清理"; }
+    }
   }
 
   function weeklyOwnerList(batch, actions) {

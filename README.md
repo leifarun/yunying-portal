@@ -2,9 +2,9 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=24`  
+当前线上版本：`v=25`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
-数据库迁移：`001`–`008` 均已应用
+数据库迁移：`001`–`008` 已应用；`009` 需执行
 
 ## 当前发布摘要
 
@@ -32,6 +32,7 @@
 - 处理动作和动作类型统一记录为“已处理”，不再设置待复核、已完成、已关闭等状态
 - 处理记录保留操作人和处理时的完整指标快照，并按 ASIN、MSKU、FNSKU、店铺拆分展示商品信息
 - 处理指标周期快照只在商品实际处理时生成，可对比相邻两次处理的指标变化
+- 创作者可在处理记录页清理全部历史记录，数据库会同步删除并刷新周任务完成进度
 - 处理记录永久保留，不随每周产品数据导入而删除
 - 每周任务分配：主管按组员、按板块设置目标数量，低潜力、中潜力、高潜力分别独立，完成进度按处理商品数统计
 - 团队协作：所有在职成员可查看全团队数据，并可协助处理其他人的商品；完成数计入商品负责人
@@ -76,7 +77,9 @@
 
 `supabase/migrations/008_app_settings.sql`
 
-`001`–`008` 均已应用到当前项目，后续重建时请按文件名顺序执行。
+`supabase/migrations/009_clear_action_history.sql`
+
+`001`–`008` 已应用到当前项目；`009_clear_action_history.sql` 用于仅创作者清理全部处理记录，需在 Supabase SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -200,7 +203,8 @@ yunying-portal/
 │     ├─ 005_creator_permissions.sql
 │     ├─ 006_split_slow_task_boards.sql
 │     ├─ 007_team_shared_data.sql
-│     └─ 008_app_settings.sql
+│     ├─ 008_app_settings.sql
+│     └─ 009_clear_action_history.sql
 ├─ DEPLOY_NEW_DEPARTMENT.md
 ├─ README.md
 ├─ CHANGELOG.md
