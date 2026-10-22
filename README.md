@@ -3,7 +3,15 @@
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
 当前线上版本：`v=19`  
-正式网址：`https://leifarun.github.io/yunying-portal/`
+正式网址：`https://leifarun.github.io/yunying-portal/`  
+数据库迁移：`001`–`007` 均已应用
+
+## 当前发布摘要
+
+- 处理记录按 ASIN、MSKU、FNSKU、店铺四列展示商品信息
+- 数据表支持表头吸顶、底部固定横向滑块和升序/降序排序
+- 商品表列宽按表头文字与排序控件自适应
+- 阈值与公式页的锁定项、只读项可正常显示阈值或“—”
 
 ## 已实现
 
