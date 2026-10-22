@@ -574,70 +574,83 @@ a { color: var(--blue); text-decoration: none; }
 }
 /* Weekly task assignment and completion */
 .weekly-assignment-card, .weekly-progress-card { margin-top: 14px; }
-.task-table, .task-progress-table { min-width: 1380px; }
-.task-table th, .task-table td, .task-progress-table th, .task-progress-table td { padding: 7px 6px; font-size: 10px; }
-.task-input { width: 58px; height: 29px; padding: 4px 6px; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff; color: var(--ink); text-align: right; font-family: Arial, "Microsoft YaHei", sans-serif; }
+.task-table, .task-progress-table {
+  width: 100%;
+  min-width: 1380px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.task-table col.task-member-col,
+.task-progress-table col.task-member-col { width: 9.2754%; }
+.task-table col.task-board-col,
+.task-progress-table col.task-board-col { width: 7.589%; }
+.task-table col.task-summary-col,
+.task-progress-table col.task-summary-col { width: 7.2464%; }
+.task-table th, .task-table td, .task-progress-table th, .task-progress-table td {
+  padding: 7px 6px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 10px;
+}
+.task-table thead th,
+.task-progress-table thead th {
+  height: 42px;
+  padding: 8px 4px;
+  white-space: nowrap;
+}
+.task-table tbody td,
+.task-progress-table tbody td { height: 46px; }
+.task-table th:first-child,
+.task-table td:first-child,
+.task-progress-table th:first-child,
+.task-progress-table td:first-child { text-align: left; }
+.task-table th:last-child,
+.task-table td:last-child,
+.task-progress-table th:last-child,
+.task-progress-table td:last-child { text-align: center; }
+.task-input {
+  display: block;
+  box-sizing: border-box;
+  width: 58px;
+  height: 29px;
+  margin: 0 auto;
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  text-align: center;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
 .task-input:focus { outline: none; border-color: #91b4fb; box-shadow: 0 0 0 3px rgba(47,111,237,.08); }
 .task-table tr.total-row td { background: #f8fafc; border-top: 1px solid var(--line); }
 .task-progress-table tbody tr { height: 60px; }
 .task-progress-table .team-person { min-width: 126px; }
-.task-progress-cell { display: inline-flex; min-width: 55px; flex-direction: column; align-items: flex-end; gap: 1px; padding: 5px 6px; border-radius: 7px; background: #f6f8fb; }
+.task-progress-cell {
+  display: inline-flex;
+  min-width: 55px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding: 5px 6px;
+  border-radius: 7px;
+  background: #f6f8fb;
+  font-variant-numeric: tabular-nums;
+}
 .task-progress-cell b { color: var(--ink); font-size: 10px; }
 .task-progress-cell span { color: var(--muted); font-size: 8px; }
 .task-progress-cell.doing { background: var(--blue-soft); }
 .task-progress-cell.done { background: var(--green-soft); }
 .task-progress-cell.done b { color: var(--green); }
 .task-progress-cell.empty { background: #f8f9fb; opacity: .6; }
-.task-total-progress { min-width: 82px; text-align: right; }
+.task-total-progress { min-width: 82px; text-align: right; font-variant-numeric: tabular-nums; }
 .task-total-progress b { display: block; color: var(--blue); font-size: 11px; }
 .task-total-progress span { display: block; color: var(--muted); font-size: 8px; margin-bottom: 4px; }
-.task-total-progress .progress { height: 5px; }.account-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 240px; }
-/* Keep weekly task headers and inputs perfectly aligned */
-.task-table, .task-progress-table {
-  width: 100%;
-  min-width: 1380px;
-  table-layout: fixed;
-}
-.task-table th,
-.task-table td,
-.task-progress-table th,
-.task-progress-table td {
-  text-align: center;
-  vertical-align: middle;
-}
-.task-table th:first-child,
-.task-table td:first-child,
-.task-progress-table th:first-child,
-.task-progress-table td:first-child {
-  width: 128px;
-  text-align: left;
-}
-.task-table th:last-child,
-.task-table td:last-child,
-.task-progress-table th:last-child,
-.task-progress-table td:last-child {
-  width: 100px;
-  text-align: center;
-}
-.task-table th.num,
-.task-table td.num,
-.task-progress-table th.num,
-.task-progress-table td.num {
-  width: auto;
-  text-align: center;
-}
-.task-table .task-input {
-  display: block;
-  width: 58px;
-  margin: 0 auto;
-  text-align: center;
-}
+.task-total-progress .progress { height: 5px; }
 .task-progress-table .task-progress-cell,
-.task-progress-table .task-total-progress {
-  margin-left: auto;
-  margin-right: auto;
-}
+.task-progress-table .task-total-progress { margin-left: auto; margin-right: auto; }
 .task-progress-table td:first-child .team-person,
-.task-progress-table td:first-child .progress {
-  margin-left: 0;
-}
+.task-progress-table td:first-child .progress { margin-left: 0; }
+.account-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 240px; }
