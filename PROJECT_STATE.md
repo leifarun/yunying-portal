@@ -4,8 +4,8 @@
 
 当前线上版本：`v=25`  
 状态：已发布，GitHub Pages 构建成功  
-最近发布：处理记录商品字段拆分、表头吸顶/排序/自适应列宽、阈值页修复  
-数据库迁移：`001`–`008` 均已应用并验证
+最近发布：创作者清理历史记录、十项商品概览、处理指标快照、表头吸顶/排序/自适应列宽  
+数据库迁移：`001`–`009` 均已应用并验证
 
 ## 一、如果这是新的 Codex 对话
 
@@ -193,7 +193,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/006_split_slow_task_boards.sql`
 - `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
 - `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
-- `supabase/migrations/009_clear_action_history.sql`（创作者清理处理记录函数，需应用）
+- `supabase/migrations/009_clear_action_history.sql`（已应用；已验证未授权请求会被拒绝）
 
 ## 五、导入与存储策略
 

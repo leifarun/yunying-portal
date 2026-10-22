@@ -4,7 +4,7 @@
 
 当前线上版本：`v=25`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
-数据库迁移：`001`–`008` 已应用；`009` 需执行
+数据库迁移：`001`–`009` 均已应用
 
 ## 当前发布摘要
 
@@ -79,7 +79,7 @@
 
 `supabase/migrations/009_clear_action_history.sql`
 
-`001`–`008` 已应用到当前项目；`009_clear_action_history.sql` 用于仅创作者清理全部处理记录，需在 Supabase SQL Editor 执行。后续重建时请按文件名顺序执行。
+`001`–`009` 均已应用到当前项目；`009_clear_action_history.sql` 已验证仅创作者可以清理全部处理记录。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 

@@ -13,7 +13,7 @@
 ## 2026-10-22（新部门部署手册）
 
 - 新增 `DEPLOY_NEW_DEPARTMENT.md`
-- 覆盖 Fork、Supabase 建库、001–008 迁移、首位创作者、Edge Function、Auth 地址和 GitHub Pages
+- 覆盖 Fork、Supabase 建库、001–009 迁移、首位创作者、Edge Function、Auth 地址和 GitHub Pages
 - 增加上线验收清单、安全说明和常见问题
 
 ## 2026-10-22（清理历史处理记录）
@@ -21,7 +21,7 @@
 - 处理记录页新增“清理历史记录”按钮，仅创作者可见
 - 清理前必须输入“清空全部记录”进行二次确认
 - 清理会同步删除数据库 `actions` 表全部处理记录，周任务完成进度随之更新
-- 新增迁移 `009_clear_action_history.sql`，提供仅创作者可执行的数据库清理函数
+- 新增并应用迁移 `009_clear_action_history.sql`，已验证未授权请求会被数据库拒绝
 - 静态资源版本更新为 `v=25`
 
 ## 2026-10-22（商品概览指标布局）
