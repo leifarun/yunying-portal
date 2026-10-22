@@ -73,7 +73,8 @@
 - 新动作保存完整指标快照
 - 处理记录按时间线进度卡展示，自动比较本次处理后到下一次处理或当前的指标变化
 - 指标变化用绿色/红色/蓝色和升降箭头区分改善、变差与中性变化
-- 产品处理弹窗新增“每周快照”表格，按导入周展示关键指标环比
+- 历史处理区域新增“处理指标周期快照”表格，仅使用实际处理时保存的指标快照
+- 每周导入不自动生成产品快照；未处理过的商品没有历史指标周期
 - 处理记录表按 ASIN、MSKU、FNSKU、店铺四列展示商品信息
 
 ### 每周任务分配
@@ -164,7 +165,6 @@
 - `thresholds`
 - `weekly_issue_stats`
 - `weekly_task_assignments`
-- `product_week_snapshots`
 
 ### Edge Function
 
@@ -189,7 +189,6 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/006_split_slow_task_boards.sql`
 - `supabase/migrations/007_team_shared_data.sql`（已应用并验证 4 条团队读取策略）
 - `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
-- `supabase/migrations/009_product_week_snapshots.sql`（产品周快照与历史回填，需应用）
 
 ## 五、导入与存储策略
 

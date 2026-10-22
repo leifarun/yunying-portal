@@ -653,6 +653,7 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
 .week-label { min-width: 104px; }
 .week-label b { display: block; color: var(--ink); font-size: 10px; }
 .week-label span { display: block; margin-top: 2px; color: var(--muted); font-size: 8.5px; }
+.week-label small { display: block; margin-top: 2px; color: var(--blue); font-size: 8px; }
 .snapshot-metric { text-align: right; }
 .snapshot-metric > b { display: block; color: var(--ink); font-size: 10px; font-variant-numeric: tabular-nums; }
 .snapshot-metric .metric-delta { margin-top: 2px; }
