@@ -727,6 +727,11 @@
     return fallbacks.map((fallback, index) => Number.isFinite(values[index]) ? values[index] : fallback);
   }
 
+  function thresholdDisplayValue(row) {
+    const value = row?.value;
+    return value === null || value === undefined || String(value).trim() === "" ? "—" : String(value);
+  }
+
   function recomputeAllProducts() {
     state.products = state.products.map((product) => normalizeProduct({ ...product, issue_keys: [] }));
   }
