@@ -278,9 +278,22 @@
     return message;
   }
 
+  function setCachedSiteName(value) {
+    const siteName = String(value || "").trim();
+    if (!siteName) return;
+    try { localStorage.setItem("portal-site-name", siteName); } catch (_) {}
+    document.cookie = `portal_site_name=${encodeURIComponent(siteName)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+
   function applySiteName(value = "") {
     let cachedName = "";
     try { cachedName = localStorage.getItem("portal-site-name") || ""; } catch (_) {}
+    if (!cachedName) {
+      const cookieName = document.cookie.split("; ").find((item) => item.startsWith("portal_site_name="));
+      if (cookieName) {
+        try { cachedName = decodeURIComponent(cookieName.split("=").slice(1).join("=")); } catch (_) {}
+      }
+    }
     const siteName = String(value || state.appSettings?.site_name || cachedName || DEFAULT_SITE_NAME).trim() || DEFAULT_SITE_NAME;
     const parts = siteName.split("·").map((part) => part.trim()).filter(Boolean);
     const primary = parts[0] || DEFAULT_SITE_NAME;
@@ -303,6 +316,7 @@
       if (error) throw error;
       if (data?.value) {
         state.appSettings = { ...state.appSettings, site_name: data.value };
+        setCachedSiteName(data.value);
         applySiteName(data.value);
       }
     } catch (_) {
@@ -311,6 +325,7 @@
   }
 
   function init() {
+    applySiteName();
     bindEvents();
     initStickyTableTools();
     try { const saved = JSON.parse(localStorage.getItem("portal-hidden-cols") || "[]"); if (Array.isArray(saved)) state.hiddenCols = new Set(saved); } catch (_) {}
@@ -331,7 +346,7 @@
 
   function enterDemo() {
     state.demo = true;
-    state.appSettings = { site_name: DEFAULT_SITE_NAME };
+    state.appSettings = {};
     const names = ["雷发润", "王丹", "胡昕怡", "梁茜"];
     state.profile = { id: "demo-manager", name: "雷发润", role: "创作者", login_name: "demo", active: true };
     state.profiles = names.map((name, i) => ({ id: `demo-${i}`, name, role: i === 0 ? "主管" : "组员", login_name: `demo${i}`, active: true }));
@@ -569,7 +584,9 @@
       state.profiles = profilesResult.data || []; state.batches = (batchesData || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       state.weeklyStats = weeklyData || []; state.actions = (actionsData || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       state.thresholds = thresholdsData || []; state.weeklyAssignments = assignmentsData || [];
-      state.appSettings = Object.fromEntries((settingsData || []).map((row) => [row.key, row.value])); applySiteName();
+      state.appSettings = Object.fromEntries((settingsData || []).map((row) => [row.key, row.value]));
+      if (state.appSettings.site_name) setCachedSiteName(state.appSettings.site_name);
+      applySiteName();
       state.currentBatch = state.batches.find((batch) => batch.is_current) || state.batches[0] || null;
       state.selectedWeekId = state.selectedWeekId || state.currentBatch?.id || null;
       state.products = state.currentBatch ? await loadProducts(state.currentBatch.id) : [];
@@ -1619,6 +1636,7 @@
     if (siteName.length > 60) { toast("网站名称不能超过 60 个字符", "error"); return; }
     if (state.demo) {
       state.appSettings = { ...state.appSettings, site_name: siteName };
+      setCachedSiteName(siteName);
       applySiteName(); renderSettings(); toast("演示网站名称已保存", "success"); return;
     }
     try {
@@ -1630,14 +1648,14 @@
       }, { onConflict: "key" });
       if (error) throw error;
       state.appSettings = { ...state.appSettings, site_name: siteName };
-      localStorage.setItem("portal-site-name", siteName);
+      setCachedSiteName(siteName);
       applySiteName(); renderSettings();
       toast("网站名称已保存，团队成员刷新后即可看到", "success");
     } catch (error) {
       const message = errorMessage(error);
       if (message.includes("app_settings") || message.includes("schema cache")) {
         state.appSettings = { ...state.appSettings, site_name: siteName };
-        localStorage.setItem("portal-site-name", siteName);
+        setCachedSiteName(siteName);
         applySiteName(); renderSettings();
         toast("名称已保存到本机；团队同步配置表尚未应用，请执行迁移 008_app_settings.sql", "error");
       } else {

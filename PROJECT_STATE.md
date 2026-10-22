@@ -2,7 +2,7 @@
 
 最后更新：2026-10-22
 
-当前线上版本：`v=20`  
+当前线上版本：`v=21`  
 状态：已发布，GitHub Pages 构建成功  
 最近发布：处理记录商品字段拆分、表头吸顶/排序/自适应列宽、阈值页修复  
 数据库迁移：`001`–`008` 均已应用并验证
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=20`
+- 当前静态资源版本：`v=21`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -91,7 +91,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=20`，部署后不会继续加载旧的“低/中潜力合并”任务表。
+- 当前静态资源缓存版本为 `v=21`，部署后不会继续加载旧的“低/中潜力合并”任务表。
 
 计数规则：
 
@@ -127,6 +127,7 @@
 
 - 仅创作者可在“账号与权限”页修改
 - 保存后同步更新浏览器标签、登录页品牌和侧边栏品牌
+- 启动页通过 localStorage + Cookie 预先读取缓存名称，刷新时不会先显示旧的固定名称
 - 支持“主名称 · 副名称”格式，最多 60 个字符
 - 主管和组员只读；全团队共享配置已通过 `008_app_settings.sql` 启用
 

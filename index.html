@@ -6,20 +6,32 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="noindex,nofollow">
   <title>运营三部 · 内部运营中台</title>
-  <link rel="stylesheet" href="./assets/styles.css?v=20">
+  <link rel="stylesheet" href="./assets/styles.css?v=21">
   <script defer src="./vendor/supabase.js"></script>
   <script defer src="./vendor/xlsx.full.min.js"></script>
-  <script defer src="./assets/config.js?v=20"></script>
-  <script defer src="./assets/app.js?v=20"></script>
+  <script defer src="./assets/config.js?v=21"></script>
+  <script defer src="./assets/app.js?v=21"></script>
 </head>
 <body>
   <div id="boot" class="boot-screen">
     <div class="boot-mark">运</div>
     <div>
-      <strong id="bootSiteName">运营三部 · 内部运营中台</strong>
+      <strong id="bootSiteName">内部运营中台</strong>
       <p>正在连接团队工作区…</p>
     </div>
   </div>
+  <script>
+    (() => {
+      try {
+        const cookieName = document.cookie.split("; ").find((item) => item.startsWith("portal_site_name="));
+        const cachedSiteName = localStorage.getItem("portal-site-name") || (cookieName ? decodeURIComponent(cookieName.split("=").slice(1).join("=")) : "");
+        if (cachedSiteName) {
+          document.getElementById("bootSiteName").textContent = cachedSiteName;
+          document.title = cachedSiteName;
+        }
+      } catch (_) {}
+    })();
+  </script>
 
   <section id="authScreen" class="auth-screen hidden">
     <div class="auth-visual">
