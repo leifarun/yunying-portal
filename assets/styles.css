@@ -592,3 +592,52 @@ a { color: var(--blue); text-decoration: none; }
 .task-total-progress b { display: block; color: var(--blue); font-size: 11px; }
 .task-total-progress span { display: block; color: var(--muted); font-size: 8px; margin-bottom: 4px; }
 .task-total-progress .progress { height: 5px; }.account-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 240px; }
+/* Keep weekly task headers and inputs perfectly aligned */
+.task-table, .task-progress-table {
+  width: 100%;
+  min-width: 1380px;
+  table-layout: fixed;
+}
+.task-table th,
+.task-table td,
+.task-progress-table th,
+.task-progress-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+.task-table th:first-child,
+.task-table td:first-child,
+.task-progress-table th:first-child,
+.task-progress-table td:first-child {
+  width: 128px;
+  text-align: left;
+}
+.task-table th:last-child,
+.task-table td:last-child,
+.task-progress-table th:last-child,
+.task-progress-table td:last-child {
+  width: 100px;
+  text-align: center;
+}
+.task-table th.num,
+.task-table td.num,
+.task-progress-table th.num,
+.task-progress-table td.num {
+  width: auto;
+  text-align: center;
+}
+.task-table .task-input {
+  display: block;
+  width: 58px;
+  margin: 0 auto;
+  text-align: center;
+}
+.task-progress-table .task-progress-cell,
+.task-progress-table .task-total-progress {
+  margin-left: auto;
+  margin-right: auto;
+}
+.task-progress-table td:first-child .team-person,
+.task-progress-table td:first-child .progress {
+  margin-left: 0;
+}

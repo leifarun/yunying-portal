@@ -117,7 +117,8 @@
     { key: "click", label: "点击率差", boards: ["click"] },
     { key: "cvr", label: "转化率差", boards: ["cvr"] },
     { key: "c4", label: "自然流量偏低", boards: ["c4"] },
-    { key: "slow_low_mid", label: "低/中潜力滞销", boards: ["sl_low", "sl_mid"] },
+    { key: "sl_low", label: "低潜力滞销", boards: ["sl_low"] },
+    { key: "sl_mid", label: "中潜力滞销", boards: ["sl_mid"] },
     { key: "slow_high", label: "高潜力滞销", boards: ["sl_high"] },
     { key: "ad", label: "广告无效花费", boards: ["ad"] },
     { key: "refund", label: "高退货率", boards: ["refund"] },
@@ -323,7 +324,8 @@
     });
     state.weeklyStats = [...statsMap.entries()].map(([key, set], idx) => { const [owner, board_key] = key.split("|"); return { id: idx + 1, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner, board_key, assigned_count: set.size }; });
     state.weeklyAssignments = [
-      { id: 1, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner: "王丹", board_key: "slow_low_mid", target_count: 20 },
+      { id: 1, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner: "王丹", board_key: "sl_low", target_count: 10 },
+      { id: 8, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner: "王丹", board_key: "sl_mid", target_count: 10 },
       { id: 2, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner: "王丹", board_key: "ad", target_count: 5 },
       { id: 3, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner: "王丹", board_key: "needad", target_count: 10 },
       { id: 4, batch_id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", owner: "胡昕怡", board_key: "show", target_count: 10 },
