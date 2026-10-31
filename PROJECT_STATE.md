@@ -2,9 +2,9 @@
 
 最后更新：2026-10-23
 
-当前线上版本：`v=30`  
+当前线上版本：`v=31`  
 状态：已发布，GitHub Pages 构建成功  
-最近发布：商品表全部表头与数据单元格居中对齐  
+最近发布：总 Listing 导入模板精简为 31 列，派生指标改为自动计算  
 数据库迁移：`001`–`009` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=30`
+- 当前静态资源版本：`v=31`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -109,7 +109,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=30`，部署后不会继续加载旧版商品表对齐样式。
+- 当前静态资源缓存版本为 `v=31`，部署后不会继续加载旧版导入模板。
 
 计数规则：
 
@@ -210,12 +210,14 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 导入流程：
 
 1. 主管上传 XLSX/CSV
-2. 前端校验表头和负责人
+2. 前端校验 31 列表头、负责人和原始指标
 3. 创建临时导入批次
 4. 分批写入产品
 5. 全部成功后切换当前批次
 6. 删除旧产品明细
 7. 保留 `actions`、`import_batches` 和周统计
+
+模板不再填写退款率、广告订单占比、CTR、广告CVR、ROAS、ACOS、ACoAS；这些指标统一由原始数据自动计算。净销售额存入产品源数据 JSON，无需新增数据库字段。
 
 免费版 500MB 下，不建议累计每周全部产品明细，因此只保留当前批次明细。
 

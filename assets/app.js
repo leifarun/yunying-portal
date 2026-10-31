@@ -136,7 +136,7 @@
     { key: "age331", label: "331-365 天", color: "#e5484d" },
     { key: "age365p", label: ">365 天", color: "#b23a3f" }
   ];
-  const PRODUCT_SELECT = "id,batch_id,msku,shop,asin,fnsku,sku,country,owner,sales,revenue,refund_qty,refund_rate,score,reviews,fba_avail,fba_value,ad_spend,ad_rev,ad_orders,imp,clk,price,sale_price,status,age_0_30,age_31_60,age_61_90,age_91_180,age_181_270,age_271_330,age_331_365,age_365p,age_0_60,age_180p,acos,ctr,cvr,ad_share,cpc,roas,acoas,issue_keys,slow_type,refund_flag";
+  const PRODUCT_SELECT = "id,batch_id,msku,shop,asin,fnsku,sku,country,owner,sales,revenue,refund_qty,refund_rate,score,reviews,fba_avail,fba_value,ad_spend,ad_rev,ad_orders,imp,clk,price,sale_price,status,age_0_30,age_31_60,age_61_90,age_91_180,age_181_270,age_271_330,age_331_365,age_365p,age_0_60,age_180p,acos,ctr,cvr,ad_share,cpc,roas,acoas,issue_keys,slow_type,refund_flag,raw";
   const DEFAULT_THRESHOLD_VALUES = {
     1: "4", 2: "4", 3: "40", 4: "5", 5: "0.6", 6: "100", 7: "100", 8: "100", 9: "100",
     10: "40", 11: "0.6", 12: "5", 13: "—", 14: "—", 15: "20", 16: "—", 17: "—",
@@ -146,10 +146,10 @@
   const PRODUCT_COLUMN_DEFS = [
     { key: "asin", label: "ASIN", width: 110 }, { key: "msku", label: "MSKU", width: 160 }, { key: "fnsku", label: "FNSKU", width: 120 },
     { key: "country", label: "国家", width: 70 }, { key: "shop", label: "店铺", width: 100 }, { key: "owner", label: "负责人", width: 70 },
-    { key: "status", label: "状态", width: 64 }, { key: "sales", label: "销量", width: 62 }, { key: "revenue", label: "销售额", width: 78 },
+    { key: "status", label: "状态", width: 64 }, { key: "sales", label: "销量", width: 62 }, { key: "revenue", label: "销售额", width: 78 }, { key: "net_sales", label: "净销售额", width: 82 },
     { key: "refund_qty", label: "退款量", width: 62 }, { key: "refund_rate", label: "退款率", width: 66 }, { key: "score", label: "评分", width: 54 },
     { key: "reviews", label: "评论数", width: 62 }, { key: "fba_avail", label: "FBA可售", width: 72 }, { key: "kxb", label: "库销比", width: 64 },
-    { key: "ad_spend", label: "广告花费", width: 74 }, { key: "ad_orders", label: "广告订单量", width: 78 }, { key: "ad_share", label: "广告订单占比", width: 84 },
+    { key: "ad_spend", label: "广告花费", width: 74 }, { key: "ad_orders", label: "广告订单量", width: 78 }, { key: "ad_rev", label: "广告销售额", width: 82 }, { key: "ad_share", label: "广告订单占比", width: 84 },
     { key: "imp", label: "展示", width: 72 }, { key: "clk", label: "点击", width: 62 }, { key: "ctr", label: "CTR", width: 62 },
     { key: "cvr", label: "广告CVR", width: 70 }, { key: "cpc", label: "CPC", width: 60 }, { key: "roas", label: "ROAS", width: 60 },
     { key: "acos", label: "ACOS", width: 64 }, { key: "acoas", label: "ACoAS", width: 66 }, { key: "price", label: "价格(原价)", width: 76 },
@@ -197,23 +197,18 @@
     { key: "owner", label: "负责人", aliases: ["负责人"] },
     { key: "sales", label: "销量", aliases: ["销量", "近30天销量"] },
     { key: "revenue", label: "销售额", aliases: ["销售额", "近30天销售额"] },
+    { key: "net_sales", label: "净销售额", aliases: ["净销售额", "净销售额（近30天）", "净销售额(近30天)"] },
     { key: "refund_qty", label: "退款量", aliases: ["退款量", "近30天退款量"] },
-    { key: "refund_rate", label: "退款率", aliases: ["退款率"] },
     { key: "score", label: "评分", aliases: ["评分"] },
     { key: "reviews", label: "评论数", aliases: ["评论数"] },
     { key: "fba_avail", label: "FBA-可售数量", aliases: ["fba-可售数量", "fba可售数量", "fba可售"] },
     { key: "fba_value", label: "FBA货值（可售+不可售）", aliases: ["fba货值（可售+不可售）", "fba货值", "货值"] },
     { key: "ad_spend", label: "广告花费", aliases: ["广告花费"] },
     { key: "ad_orders", label: "广告订单量", aliases: ["广告订单量", "广告订单"] },
-    { key: "ad_share", label: "广告订单占比", aliases: ["广告订单占比"] },
+    { key: "ad_rev", label: "广告销售额", aliases: ["广告销售额", "广告销售额（近30天）", "广告销售额(近30天)"] },
     { key: "imp", label: "展示", aliases: ["展示", "展示量", "曝光", "曝光量"] },
     { key: "clk", label: "点击", aliases: ["点击", "点击量"] },
-    { key: "ctr", label: "CTR", aliases: ["ctr", "点击率"] },
-    { key: "cvr", label: "广告CVR", aliases: ["广告cvr", "cvr", "转化率"] },
     { key: "cpc", label: "CPC", aliases: ["cpc"] },
-    { key: "roas", label: "ROAS", aliases: ["roas"] },
-    { key: "acos", label: "ACOS", aliases: ["acos"] },
-    { key: "acoas", label: "ACoAS", aliases: ["acoas"] },
     { key: "status", label: "状态", aliases: ["状态", "listing状态"] },
     { key: "price", label: "价格(原价)", aliases: ["价格(原价)", "原价", "价格"] },
     { key: "sale_price", label: "优惠价(当前listing前台价格)", aliases: ["优惠价(当前listing前台价格)", "优惠价", "当前售价"] },
@@ -226,8 +221,8 @@
     { key: "age_331_365", label: "331<=库龄<=365天", aliases: ["331<=库龄<=365天", "331-365天", "331-365"] },
     { key: "age_365p", label: "365<=库龄", aliases: ["365<=库龄", "365+库龄", "365+", ">365"] }
   ];
-  const PRODUCT_NUMERIC_KEYS = new Set(["sales", "revenue", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "kxb", "ad_spend", "ad_orders", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
-  const REQUIRED_IMPORT_KEYS = ["asin", "msku", "shop", "owner", "sales", "revenue", "refund_qty", "fba_avail", "ad_spend", "ad_orders", "imp", "clk", "status"];
+  const PRODUCT_NUMERIC_KEYS = new Set(["sales", "revenue", "net_sales", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "kxb", "ad_spend", "ad_orders", "ad_rev", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
+  const REQUIRED_IMPORT_KEYS = ["asin", "msku", "shop", "owner", "sales", "revenue", "net_sales", "refund_qty", "fba_avail", "ad_spend", "ad_orders", "ad_rev", "imp", "clk", "status"];
   const VALID_STATUS = new Set(["在售", "停售", "搜索禁止显示", "无在售信息"]);
   const DEFAULT_SITE_NAME = "运营三部 · 内部运营中台";
 
@@ -840,16 +835,20 @@
     const needOrders = Math.round(needMo * adOrderRatio * 100) / 100;
     const needClk = Math.round(needOrders / targetCvr);
     const needImp = needClk > 0 ? Math.floor(needClk / targetCtr) : 0;
-    const ctr = imp > 0 ? clk / imp : num(p.ctr);
-    const cvr = clk > 0 ? adOrders / clk : num(p.cvr);
-    const cpc = clk > 0 ? adSpend / clk : num(p.cpc);
-    const adShare = sales > 0 ? adOrders / sales : num(p.ad_share);
-    const unitPrice = num(p.sale_price) || num(p.price);
-    const rawAcos = p.acos !== null && p.acos !== undefined ? num(p.acos) : 0;
-    const acos = rawAcos > 0 ? rawAcos : (adOrders > 0 && unitPrice > 0 ? adSpend / (adOrders * unitPrice) : 0);
-    const acoas = revenue > 0 ? adSpend / revenue : num(p.acoas);
-    const roas = num(p.roas);
-    const refundRate = num(p.refund_rate) || (sales > 0 ? refundQty / sales : 0);
+    const rawNetSales = p.raw && typeof p.raw === "object" ? p.raw.net_sales : p.net_sales;
+    const netSales = rawNetSales !== null && rawNetSales !== undefined && rawNetSales !== "" ? num(rawNetSales) : revenue;
+    const hasAdRevenue = p.ad_rev !== null && p.ad_rev !== undefined && p.ad_rev !== "";
+    const legacyRoas = num(p.roas);
+    const legacyAcos = num(p.acos);
+    const adRevenue = hasAdRevenue ? num(p.ad_rev) : (adSpend > 0 && legacyRoas > 0 ? adSpend * legacyRoas : (adSpend > 0 && legacyAcos > 0 ? adSpend / legacyAcos : 0));
+    const ctr = imp > 0 ? clk / imp : 0;
+    const cvr = clk > 0 ? adOrders / clk : 0;
+    const cpc = clk > 0 ? adSpend / clk : 0;
+    const adShare = sales > 0 ? adOrders / sales : 0;
+    const roas = adSpend > 0 ? adRevenue / adSpend : legacyRoas;
+    const acos = adRevenue > 0 ? adSpend / adRevenue : legacyAcos;
+    const acoas = netSales > 0 ? adSpend / netSales : num(p.acoas);
+    const refundRate = sales > 0 ? refundQty / sales : 0;
     const status = p.status || "";
     const needad = status === "在售" && fbaAvail >= 1 && adSpend <= 0 && imp <= 0;
     let cat = "";
@@ -871,7 +870,7 @@
     if (adSpend > adSpendMin && (acos > acosLimit || adOrders <= 0)) issueKeys.push("ad");
     if (refundFlag) issueKeys.push("refund");
     if (num(p.score) > 0 && num(p.score) < scoreLimit) issueKeys.push("score");
-    return { ...p, sales, revenue, refund_qty: refundQty, refund_rate: refundRate, score: num(p.score), reviews: num(p.reviews), fba_avail: fbaAvail, fba_value: num(p.fba_value), ad_spend: adSpend, ad_orders: adOrders, imp, clk, price: num(p.price), sale_price: num(p.sale_price), age0, age31, age61, age91, age181, age271, age331, age365p, old60, old90, old180, old270, kxb, needMo, needOrders, needClk, needImp, ctr, cvr, cpc, roas, acos, acoas, adShare, refundFlag, slowType, needad, cat, issueKeys: [...new Set(issueKeys)], _key: `${p.shop || ""}::${p.msku || ""}` };
+    return { ...p, sales, revenue, net_sales: netSales, refund_qty: refundQty, refund_rate: refundRate, score: num(p.score), reviews: num(p.reviews), fba_avail: fbaAvail, fba_value: num(p.fba_value), ad_spend: adSpend, ad_rev: adRevenue, ad_orders: adOrders, imp, clk, price: num(p.price), sale_price: num(p.sale_price), age0, age31, age61, age91, age181, age271, age331, age365p, old60, old90, old180, old270, kxb, needMo, needOrders, needClk, needImp, ctr, cvr, cpc, roas, acos, acoas, adShare, refundFlag, slowType, needad, cat, issueKeys: [...new Set(issueKeys)], _key: `${p.shop || ""}::${p.msku || ""}` };
   }
 
   function hasIssue(p, key) {
@@ -900,15 +899,10 @@
     const totalValue = products.reduce((sum, p) => sum + p.fba_value, 0);
     const totalSales = products.reduce((sum, p) => sum + p.sales, 0);
     const totalRevenue = products.reduce((sum, p) => sum + p.revenue, 0);
+    const totalNetSales = products.reduce((sum, p) => sum + p.net_sales, 0);
     const totalRefund = products.reduce((sum, p) => sum + p.refund_qty, 0);
     const totalAdSpend = products.reduce((sum, p) => sum + p.ad_spend, 0);
-    const totalAdRevenue = products.reduce((sum, p) => {
-      if (num(p.ad_rev) > 0) return sum + num(p.ad_rev);
-      if (p.ad_spend > 0 && p.acos > 0) return sum + p.ad_spend / p.acos;
-      const unitPrice = num(p.sale_price) || num(p.price);
-      if (p.ad_orders > 0 && unitPrice > 0) return sum + p.ad_orders * unitPrice;
-      return sum;
-    }, 0);
+    const totalAdRevenue = products.reduce((sum, p) => sum + p.ad_rev, 0);
     const ageItems = AGE_BUCKETS.map((bucket) => ({ ...bucket, l: bucket.label, c: bucket.color, v: products.reduce((sum, p) => sum + num(p[bucket.key]), 0) }));
     const ageTotal = ageItems.reduce((sum, item) => sum + item.v, 0);
     const gt180 = ageItems.filter((item) => ["age181", "age271", "age331", "age365p"].includes(item.key)).reduce((sum, item) => sum + item.v, 0);
@@ -925,11 +919,11 @@
     const owners = Object.entries(products.reduce((map, p) => { const key = p.owner || "未分配"; map[key] = (map[key] || 0) + 1; return map; }, {})).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
     const countries = Object.entries(products.reduce((map, p) => { const key = p.country || "未填写"; map[key] = (map[key] || 0) + 1; return map; }, {})).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
     return {
-      total, totalStock, totalValue, totalSales, totalRevenue, totalRefund, totalAdSpend, totalAdRevenue,
+      total, totalStock, totalValue, totalSales, totalRevenue, totalNetSales, totalRefund, totalAdSpend, totalAdRevenue,
       avgPrice: totalSales > 0 ? totalRevenue / totalSales : 0,
       kxb: totalSales > 0 ? totalStock / totalSales : (totalStock > 0 ? 999 : 0),
       acos: totalAdRevenue > 0 ? totalAdSpend / totalAdRevenue : 0,
-      acoas: totalRevenue > 0 ? totalAdSpend / totalRevenue : 0,
+      acoas: totalNetSales > 0 ? totalAdSpend / totalNetSales : 0,
       refundRate: totalSales > 0 ? totalRefund / totalSales : 0,
       rateOnsaleStock: stockOnsale.length > 0 ? ordered / stockOnsale.length : 0,
       onsale, offsale, slowCount, ageItems, ageTotal, gt180, boxes, shops, owners, countries
@@ -1002,7 +996,7 @@
         <div class="kpi orange"><div class="kpi-label">出单率</div><div class="kpi-value">${(dashboard.rateOnsaleStock * 100).toFixed(1)}%</div><div class="kpi-sub">每 ${Math.max(2, Math.round(1 / (dashboard.rateOnsaleStock || 1)))} 款里 1 款出单</div></div>
         <div class="kpi green"><div class="kpi-label">FBA 库销比</div><div class="kpi-value">${dashboard.kxb >= 900 ? "∞" : dashboard.kxb.toFixed(2)} 个月</div><div class="kpi-sub">${dashboard.kxb <= thresholdNumber(1, 4) ? `健康（低于 ${thresholdNumber(1, 4)} 个月）` : `高于健康线 ${thresholdNumber(1, 4)} 个月`}</div></div>
         <div class="kpi red"><div class="kpi-label">总 ACOS</div><div class="kpi-value">${(dashboard.acos * 100).toFixed(2)}%</div><div class="kpi-sub">${dashboard.acos > thresholdNumber(15, 20) / 100 ? `高于警戒线 ${thresholdNumber(15, 20)}%` : `低于警戒线 ${thresholdNumber(15, 20)}%`}</div></div>
-        <div class="kpi"><div class="kpi-label">总 ACoAS</div><div class="kpi-value">${(dashboard.acoas * 100).toFixed(2)}%</div><div class="kpi-sub">广告费占销售额</div></div>
+        <div class="kpi"><div class="kpi-label">总 ACoAS</div><div class="kpi-value">${(dashboard.acoas * 100).toFixed(2)}%</div><div class="kpi-sub">广告费占净销售额</div></div>
         <div class="kpi orange"><div class="kpi-label">总退货率</div><div class="kpi-value">${(dashboard.refundRate * 100).toFixed(2)}%</div><div class="kpi-sub">每 ${Math.max(2, Math.round(1 / (dashboard.refundRate || 1)))} 单退 1 单</div></div>
       </div></section>
       <section class="ksec"><div class="ksec-title">状态与风险</div><div class="kpi-grid dash-kpi-grid">
@@ -1174,6 +1168,7 @@
     else if (key === "status") content = `<span class="pill ${product.status === "在售" ? "pill-green" : product.status === "停售" ? "pill-gray" : "pill-orange"}">${escapeHtml(product.status || "—")}</span>`;
     else if (key === "sales") content = fmt(product.sales);
     else if (key === "revenue") content = fmtMoney(product.revenue);
+    else if (key === "net_sales") content = fmtMoney(product.net_sales);
     else if (key === "refund_qty") content = fmt(product.refund_qty);
     else if (key === "refund_rate") { content = fmtPct(product.refund_rate); if (product.refund_rate > thresholdParts(23, [2, 15])[1] / 100) extraClass = "bad"; }
     else if (key === "score") content = product.score || "—";
@@ -1182,6 +1177,7 @@
     else if (key === "kxb") { content = product.kxb >= 900 ? "∞" : product.kxb.toFixed(1); if (product.kxb > thresholdNumber(1, 4)) extraClass = "warn"; }
     else if (key === "ad_spend") content = fmtMoney(product.ad_spend);
     else if (key === "ad_orders") content = fmt(product.ad_orders);
+    else if (key === "ad_rev") content = fmtMoney(product.ad_rev);
     else if (key === "ad_share") { content = fmtPct(product.adShare); if (product.adShare > thresholdNumber(3, 40) / 100) extraClass = "warn"; }
     else if (key === "imp") content = fmt(product.imp);
     else if (key === "clk") content = fmt(product.clk);
@@ -1419,6 +1415,8 @@
       ctr: product.ctr,
       cvr: product.cvr,
       acos: product.acos,
+      ad_rev: product.ad_rev,
+      net_sales: product.net_sales,
       kxb: product.kxb,
       score: product.score,
       price: product.price,
@@ -1876,7 +1874,7 @@
     $("#content").innerHTML = `
       <div class="page-head"><div><h1>阈值与公式</h1><p>主管修改后，当前批次看板、总 Listing、8 个优化板块和当周人效会立即重新计算；历史周快照保持不变。</p></div><div class="page-actions">${isAdmin ? `<button class="btn" data-action="reset-thresholds">恢复原型默认</button><button class="btn btn-primary" data-action="save-thresholds">保存全部修改</button>` : `<span class="pill pill-gray">只读</span>`}</div></div>
       <div class="hint"><strong>以后怎么改</strong><span>直接修改下方“当前值”，点击右上角“保存全部修改”。锁定项是公式推导或固定定义，不参与手工修改。</span></div>
-      <div class="table-card"><div class="table-scroll"><table class="data-table threshold-table"><thead><tr><th>#</th><th>指标</th><th>公式 / 判定条件</th><th>当前值</th><th>单位</th><th>用途</th><th>说明</th><th>状态</th></tr></thead><tbody>${rows.map((row) => `<tr><td class="mono">${row.id}</td><td><b>${escapeHtml(row.name)}</b></td><td class="threshold-formula">${escapeHtml(row.formula || "—")}</td><td>${row.is_locked || !isAdmin ? `<span class="threshold-readonly">${escapeHtml(thresholdDisplayValue(row))}</span>` : `<input class="threshold-input" data-threshold-id="${row.id}" value="${attr(row.value ?? "")}" aria-label="${attr(row.name)}">`}</td><td>${escapeHtml(row.unit || "—")}</td><td>${escapeHtml(thresholdUsage(row.id))}</td><td class="muted">${escapeHtml(row.note || "")}</td><td>${row.is_locked ? `<span class="pill pill-gray">自动/固定</span>` : `<span class="pill pill-green">可修改</span>`}</td></tr>`).join("")}</tbody></table></div></div>`;
+      <div class="table-card"><div class="table-scroll"><table class="data-table threshold-table"><thead><tr><th>#</th><th>指标</th><th>公式 / 判定条件</th><th>当前值</th><th>单位</th><th>用途</th><th>说明</th><th>状态</th></tr></thead><tbody>${rows.map((row) => `<tr><td class="mono">${row.id}</td><td><b>${escapeHtml(row.name)}</b></td><td class="threshold-formula">${escapeHtml(Number(row.id) === 16 ? "广告花费 ÷ 近30天净销售额" : row.formula || "—")}</td><td>${row.is_locked || !isAdmin ? `<span class="threshold-readonly">${escapeHtml(thresholdDisplayValue(row))}</span>` : `<input class="threshold-input" data-threshold-id="${row.id}" value="${attr(row.value ?? "")}" aria-label="${attr(row.name)}">`}</td><td>${escapeHtml(row.unit || "—")}</td><td>${escapeHtml(thresholdUsage(row.id))}</td><td class="muted">${escapeHtml(row.note || "")}</td><td>${row.is_locked ? `<span class="pill pill-gray">自动/固定</span>` : `<span class="pill pill-green">可修改</span>`}</td></tr>`).join("")}</tbody></table></div></div>`;
   }
 
   async function saveThresholds(reset = false) {
@@ -1906,7 +1904,7 @@
       return;
     }
     const batch = state.currentBatch;
-    $("#content").innerHTML = `<div class="page-head"><div><h1>导入中心</h1><p>每周一次标准导入；切换成功后只清空上一批产品明细，不清理处理记录。</p></div><div class="page-actions"><span class="pill pill-blue">仅主管可用</span><button class="btn" data-action="download-template">下载标准模板</button></div></div>${batch ? `<div class="hint"><strong>当前批次</strong><span>${weekText(batch)} · ${fmt(batch.row_count || state.products.length)} 行产品 · 导入于 ${formatFullDateTime(batch.created_at)}</span></div>` : `<div class="hint"><strong>首次导入</strong><span>请使用标准模板整理数据。导入成功后，本周产品会进入所有优化板块。</span></div>`}<div class="steps"><div class="step active"><b><i>1</i>下载模板</b><p>固定 36 列，随附填写说明</p></div><div class="step"><b><i>2</i>整理数据</b><p>一行一个 MSKU + 店铺</p></div><div class="step"><b><i>3</i>上传校验</b><p>自动检查字段与负责人</p></div><div class="step"><b><i>4</i>确认切换</b><p>旧产品清理，动作记录保留</p></div></div><div class="upload-grid"><div class="card"><div class="card-head"><div><h2>上传本周文件</h2><p>支持 .xlsx 与 .csv，建议优先使用模板</p></div></div><div class="card-body"><label class="dropzone" id="dropzone"><input id="importFile" type="file" accept=".xlsx,.xls,.csv"><span class="drop-icon">⇧</span><b>拖拽文件到这里，或点击选择</b><p>文件只会在浏览器中解析校验，确认后才分批写入 Supabase。</p></label><div id="importPreview" style="margin-top:16px"></div></div></div><div class="card"><div class="card-head"><div><h2>每周批次设置</h2><p>导入前确认周期和边界</p></div></div><div class="card-body"><div class="form-grid"><label>周起始日期<input id="weekStart" type="date" value="${dateOnly(startOfWeek())}"></label><label>周结束日期<input id="weekEnd" type="date" value="${dateOnly(endOfWeek())}"></label><label>批次规则<span class="field-help">新导入成功后，旧批次的产品明细会被清理；旧处理记录、动作快照和周统计不会被清理。免费版 500MB 足够长期使用。</span></label></div><div class="template-list" style="margin-top:16px"><div class="template-item"><div class="template-icon">XLS</div><div><b>总Listing数据_导入模板.xlsx</b><small>36 列标准模板 + 填写说明</small></div><button class="btn btn-sm" data-action="download-template">下载</button></div><div class="template-item"><div class="template-icon">SQL</div><div><b>数据保留策略</b><small>产品明细按周替换；处理记录永久保留</small></div><span class="pill pill-green">已配置</span></div></div></div></div></div>`;
+    $("#content").innerHTML = `<div class="page-head"><div><h1>导入中心</h1><p>每周一次标准导入；切换成功后只清空上一批产品明细，不清理处理记录。</p></div><div class="page-actions"><span class="pill pill-blue">仅主管可用</span><button class="btn" data-action="download-template">下载标准模板</button></div></div>${batch ? `<div class="hint"><strong>当前批次</strong><span>${weekText(batch)} · ${fmt(batch.row_count || state.products.length)} 行产品 · 导入于 ${formatFullDateTime(batch.created_at)}</span></div>` : `<div class="hint"><strong>首次导入</strong><span>请使用标准模板整理数据。导入成功后，本周产品会进入所有优化板块。</span></div>`}<div class="steps"><div class="step active"><b><i>1</i>下载模板</b><p>固定 ${IMPORT_COLUMNS.length} 列，随附填写说明</p></div><div class="step"><b><i>2</i>整理数据</b><p>一行一个 MSKU + 店铺</p></div><div class="step"><b><i>3</i>上传校验</b><p>自动检查字段与负责人</p></div><div class="step"><b><i>4</i>确认切换</b><p>旧产品清理，动作记录保留</p></div></div><div class="upload-grid"><div class="card"><div class="card-head"><div><h2>上传本周文件</h2><p>支持 .xlsx 与 .csv，建议优先使用模板</p></div></div><div class="card-body"><label class="dropzone" id="dropzone"><input id="importFile" type="file" accept=".xlsx,.xls,.csv"><span class="drop-icon">⇧</span><b>拖拽文件到这里，或点击选择</b><p>文件只会在浏览器中解析校验，确认后才分批写入 Supabase。</p></label><div id="importPreview" style="margin-top:16px"></div></div></div><div class="card"><div class="card-head"><div><h2>每周批次设置</h2><p>导入前确认周期和边界</p></div></div><div class="card-body"><div class="form-grid"><label>周起始日期<input id="weekStart" type="date" value="${dateOnly(startOfWeek())}"></label><label>周结束日期<input id="weekEnd" type="date" value="${dateOnly(endOfWeek())}"></label><label>批次规则<span class="field-help">新导入成功后，旧批次的产品明细会被清理；旧处理记录、动作快照和周统计不会被清理。免费版 500MB 足够长期使用。</span></label></div><div class="template-list" style="margin-top:16px"><div class="template-item"><div class="template-icon">XLS</div><div><b>总Listing数据_导入模板.xlsx</b><small>${IMPORT_COLUMNS.length} 列标准模板 + 填写说明</small></div><button class="btn btn-sm" data-action="download-template">下载</button></div><div class="template-item"><div class="template-icon">SQL</div><div><b>数据保留策略</b><small>产品明细按周替换；处理记录永久保留</small></div><span class="pill pill-green">已配置</span></div></div></div></div></div>`;
     if (state.pendingImport) { const placeholder = $("#importPreview"); if (placeholder) placeholder.outerHTML = renderImportPreview(); }
   }
 
@@ -1970,15 +1968,15 @@
       const product = {
         asin: String(get("asin")).trim() || null, msku, fnsku: String(get("fnsku")).trim() || null, sku: null,
         country: String(get("country")).trim() || null, shop, owner,
-        sales: num(get("sales")), revenue: num(get("revenue")), refund_qty: num(get("refund_qty")), refund_rate: pctValue(get("refund_rate")),
+        sales: num(get("sales")), revenue: num(get("revenue")), refund_qty: num(get("refund_qty")), refund_rate: 0,
         score: num(get("score")), reviews: Math.round(num(get("reviews"))), fba_avail: Math.round(num(get("fba_avail"))), fba_value: num(get("fba_value")),
-        ad_spend: num(get("ad_spend")), ad_rev: null, ad_orders: num(get("ad_orders")), imp: Math.round(num(get("imp"))), clk: Math.round(num(get("clk"))),
-        ctr: pctValue(get("ctr")), cvr: pctValue(get("cvr")), cpc: num(get("cpc")), roas: num(get("roas")), acos: pctValue(get("acos")), acoas: pctValue(get("acoas")), ad_share: pctValue(get("ad_share")),
+        ad_spend: num(get("ad_spend")), ad_rev: num(get("ad_rev")), ad_orders: num(get("ad_orders")), imp: Math.round(num(get("imp"))), clk: Math.round(num(get("clk"))),
+        ctr: 0, cvr: 0, cpc: 0, roas: 0, acos: 0, acoas: 0, ad_share: 0,
         status: status || "无在售信息", price: num(get("price")), sale_price: num(get("sale_price")),
-        age_0_30: Math.round(num(get("age_0_30"))), age_31_60: Math.round(num(get("age_31_60"))), age_61_90: Math.round(num(get("age_61_90"))), age_91_180: Math.round(num(get("age_91_180"))), age_181_270: Math.round(num(get("age_181_270"))), age_271_330: Math.round(num(get("age_271_330"))), age_331_365: Math.round(num(get("age_331_365"))), age_365p: Math.round(num(get("age_365p"))), raw: null
+        age_0_30: Math.round(num(get("age_0_30"))), age_31_60: Math.round(num(get("age_31_60"))), age_61_90: Math.round(num(get("age_61_90"))), age_91_180: Math.round(num(get("age_91_180"))), age_181_270: Math.round(num(get("age_181_270"))), age_271_330: Math.round(num(get("age_271_330"))), age_331_365: Math.round(num(get("age_331_365"))), age_365p: Math.round(num(get("age_365p"))), raw: { net_sales: num(get("net_sales")) }
       };
       const normalized = normalizeProduct(product);
-      rows.push({ ...product, age_0_60: product.age_0_30 + product.age_31_60, age_61_90: product.age_61_90, age_91_180: product.age_91_180, age_180p: product.age_181_270 + product.age_271_330 + product.age_331_365 + product.age_365p, refund_flag: normalized.refundFlag || null, slow_type: normalized.slowType || null, issue_keys: normalized.issueKeys, acos: normalized.acos, ctr: normalized.ctr, cvr: normalized.cvr, ad_share: normalized.adShare, cpc: normalized.cpc, roas: normalized.roas, acoas: normalized.acoas });
+      rows.push({ ...product, age_0_60: product.age_0_30 + product.age_31_60, age_61_90: product.age_61_90, age_91_180: product.age_91_180, age_180p: product.age_181_270 + product.age_271_330 + product.age_331_365 + product.age_365p, refund_rate: normalized.refundRate, refund_flag: normalized.refundFlag || null, slow_type: normalized.slowType || null, issue_keys: normalized.issueKeys, acos: normalized.acos, ctr: normalized.ctr, cvr: normalized.cvr, ad_share: normalized.adShare, cpc: normalized.cpc, roas: normalized.roas, acoas: normalized.acoas });
     });
     if (!rows.length) errors.push("文件中没有有效数据行");
     if (errors.length > 80) warnings.push("错误超过 80 条，仅展示前 20 条；请先按提示修正模板。");
@@ -1992,6 +1990,22 @@
     state.busy = true;
     const btn = $("[data-action='confirm-import']"); if (btn) { btn.disabled = true; btn.textContent = "正在导入…"; }
     const progress = $("#importProgress"); if (progress) { progress.classList.remove("hidden"); progress.innerHTML = `<div class="import-progress-head"><span>准备写入批次</span><span>0%</span></div><div class="progress"><i style="width:0%"></i></div><p>正在创建临时批次…</p>`; }
+    if (state.demo) {
+      const demoBatch = {
+        ...(state.currentBatch || {}),
+        id: Date.now(), week_no: job.weekNo, week_start: job.weekStart, week_end: job.weekEnd,
+        file_name: job.fileName, row_count: job.rows.length, is_current: true,
+        status: "已生效", created_at: new Date().toISOString()
+      };
+      state.currentBatch = demoBatch;
+      state.batches = [demoBatch];
+      state.products = job.rows.map((row) => normalizeProduct({ ...row, batch_id: demoBatch.id }));
+      state.pendingImport = null;
+      state.busy = false;
+      setView("dashboard");
+      toast("演示数据已切换，派生指标已自动计算", "success");
+      return;
+    }
     let batchId = null;
     try {
       const { data: batch, error: batchError } = await sb.from("import_batches").insert({ week_no: job.weekNo, week_start: job.weekStart, week_end: job.weekEnd, file_name: job.fileName, row_count: job.rows.length, is_current: false, imported_by: state.profile.id, status: "导入中" }).select("*").single();
@@ -2027,10 +2041,10 @@
 
   function downloadTemplate() {
     const headers = IMPORT_COLUMNS.map((column) => column.label);
-    const sample = { "ASIN": "B0XXXXXXXX", "MSKU": "DEMO-001", "Fnsku": "X000000000", "国家": "沙特阿拉伯", "店铺": "lontime", "负责人": state.profile?.name || "王丹", "销量": 12, "销售额": 720.5, "退款量": 0, "退款率": 0, "评分": 4.6, "评论数": 38, "FBA-可售数量": 25, "FBA货值（可售+不可售）": 800, "广告花费": 24.5, "广告订单量": 3, "展示": 5200, "点击": 45, "状态": "在售", "价格(原价)": 59.9, "优惠价(当前listing前台价格)": 54.9 };
+    const sample = { "ASIN": "B0XXXXXXXX", "MSKU": "DEMO-001", "Fnsku": "X000000000", "国家": "沙特阿拉伯", "店铺": "lontime", "负责人": state.profile?.name || "王丹", "销量": 12, "销售额": 720.5, "净销售额": 680, "退款量": 0, "评分": 4.6, "评论数": 38, "FBA-可售数量": 25, "FBA货值（可售+不可售）": 800, "广告花费": 24.5, "广告订单量": 3, "广告销售额": 180.5, "展示": 5200, "点击": 45, "状态": "在售", "价格(原价)": 59.9, "优惠价(当前listing前台价格)": 54.9 };
     const dataSheet = XLSX.utils.json_to_sheet([sample], { header: headers });
     dataSheet["!cols"] = headers.map((header) => ({ wch: Math.max(12, Math.min(28, header.length + 4)) }));
-    const noteRows = [["运营三部 · 总 Listing 数据导入模板"], ["字段", "说明"], ["一行主键", "MSKU + 店铺，同一文件内不可重复"], ["负责人", "必须与系统账号姓名完全一致"], ["百分比", "可填 0.2 或 20%，系统统一存为小数"], ["库龄", "按件数填写 8 个库龄段"], ["导入规则", "确认后清空旧产品明细，保留处理记录与历史周统计"]];
+    const noteRows = [["运营三部 · 总 Listing 数据导入模板"], ["字段", "说明"], ["一行主键", "MSKU + 店铺，同一文件内不可重复"], ["负责人", "必须与系统账号姓名完全一致"], ["新增原始字段", "净销售额与广告销售额为必填，用于计算 ACoAS、ROAS 和 ACOS"], ["自动计算", "退款率=退款量/销量；广告订单占比=广告订单量/销量；CTR=点击/展示；广告CVR=广告订单量/点击；ROAS=广告销售额/广告花费；ACOS=广告花费/广告销售额；ACoAS=广告花费/净销售额"], ["库龄", "按件数填写 8 个库龄段"], ["导入规则", "确认后清空旧产品明细，保留处理记录与历史周统计"]];
     const noteSheet = XLSX.utils.aoa_to_sheet(noteRows); noteSheet["!cols"] = [{ wch: 20 }, { wch: 72 }];
     const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, dataSheet, "总Listing数据"); XLSX.utils.book_append_sheet(workbook, noteSheet, "填写说明"); XLSX.writeFile(workbook, "总Listing数据_导入模板.xlsx");
   }
@@ -2230,7 +2244,7 @@
     downloadCsv(`处理记录_${todayStr()}.csv`, rows);
   }
   function exportBoardCsv() {
-    const rows = filteredProducts(state.view === "board" ? state.board : "all").map((p) => ({ ASIN: p.asin, MSKU: p.msku, FNSKU: p.fnsku, 国家: p.country, 店铺: p.shop, 负责人: p.owner, 状态: p.status, 销量: p.sales, 销售额: p.revenue, 退款量: p.refund_qty, 退款率: p.refund_rate, 评分: p.score, FBA可售: p.fba_avail, FBA货值: p.fba_value, 广告花费: p.ad_spend, 广告订单: p.ad_orders, 展示: p.imp, 点击: p.clk, CTR: p.ctr, 广告CVR: p.cvr, 库销比: p.kxb, 问题板块: p.issueKeys.map((key) => BOARD[key]?.label).join(" / ") }));
+    const rows = filteredProducts(state.view === "board" ? state.board : "all").map((p) => ({ ASIN: p.asin, MSKU: p.msku, FNSKU: p.fnsku, 国家: p.country, 店铺: p.shop, 负责人: p.owner, 状态: p.status, 销量: p.sales, 销售额: p.revenue, 净销售额: p.net_sales, 退款量: p.refund_qty, 退款率: p.refund_rate, 评分: p.score, FBA可售: p.fba_avail, FBA货值: p.fba_value, 广告花费: p.ad_spend, 广告订单: p.ad_orders, 广告销售额: p.ad_rev, 展示: p.imp, 点击: p.clk, CTR: p.ctr, 广告CVR: p.cvr, 库销比: p.kxb, 问题板块: p.issueKeys.map((key) => BOARD[key]?.label).join(" / ") }));
     downloadCsv(`${BOARD[state.board]?.label || "总Listing数据"}_${todayStr()}.csv`, rows);
   }
   function exportWeeklyCsv() {
