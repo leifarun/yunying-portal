@@ -2,9 +2,9 @@
 
 最后更新：2026-10-23
 
-当前线上版本：`v=31`  
+当前线上版本：`v=32`  
 状态：已发布，GitHub Pages 构建成功  
-最近发布：总 Listing 导入模板精简为 31 列，派生指标改为自动计算  
+最近发布：每周任务完成数改为按处理时选择的优化板块计数  
 数据库迁移：`001`–`009` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=31`
+- 当前静态资源版本：`v=32`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -109,11 +109,11 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=31`，部署后不会继续加载旧版导入模板。
+- 当前静态资源缓存版本为 `v=32`，部署后不会继续加载旧版任务计数规则。
 
 计数规则：
 
-- 同一个商品属于多个任务板块时，处理该商品后各板块分别算完成 1
+- 任务完成数按提交处理时选择的优化板块计算；同一商品如在不同板块分别提交处理，各板块分别计 1
 - 同一个板块内重复提交动作，仍只算 1 个商品
 - 完成进度使用当前批次动作快照中的 `issue_keys`，旧快照缺失时用当前产品或动作板块回退
 - 任何组员协助处理其他负责人的商品，完成数仍计入商品负责人
