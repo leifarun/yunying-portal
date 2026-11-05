@@ -743,6 +743,7 @@
     if (action === "export-logs") exportActionsCsv();
     if (action === "open-clear-history") openClearHistoryModal();
     if (action === "confirm-clear-history") clearActionHistory();
+    if (action === "delete-action") deleteActionRecord(actionEl.dataset.id);
     if (action === "export-weekly") exportWeeklyCsv();
     if (action === "save-profile") saveProfile(actionEl.dataset.id);
     if (action === "save-site-name") saveSiteName();
@@ -1511,7 +1512,34 @@
       if (f.time === "week" && new Date(action.created_at) < startOfWeek(new Date())) return false;
       return true;
     });
-    $("#content").innerHTML = `<div class="page-head"><div><h1>处理记录</h1><p>处理动作已拆分为处理类型和具体动作；支持组员按标准模板批量导入，历史记录和当时指标快照永久保留。</p></div><div class="page-actions"><button class="btn btn-primary" data-action="open-action-import">导入记录</button><button class="btn" data-action="download-action-template">导入模板</button><button class="btn" data-action="export-logs">导出记录</button>${isCreatorRole(state.profile.role) ? `<button class="btn btn-danger" data-action="open-clear-history">清理历史记录</button>` : ""}</div></div><div class="hint"><strong>批量导入</strong><span>模板列为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作。系统优先按“店铺 + MSKU”匹配当前批次商品，并用 ASIN、FNSKU 校验；导入后自动保存当前指标快照。</span></div><div class="filter-bar"><select data-log-filter="user"><option value="">操作人：全部</option>${owners.map((owner) => `<option value="${attr(owner)}" ${state.logFilters.user === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}</select><select data-log-filter="board"><option value="">板块：全部</option>${BOARD_ORDER.map((key) => `<option value="${key}" ${state.logFilters.board === key ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select><select data-log-filter="time"><option value="week" ${state.logFilters.time === "week" ? "selected" : ""}>本周</option><option value="7d" ${state.logFilters.time === "7d" ? "selected" : ""}>近 7 天</option><option value="30d" ${state.logFilters.time === "30d" ? "selected" : ""}>近 30 天</option><option value="" ${!state.logFilters.time ? "selected" : ""}>全部时间</option></select><span class="filter-spacer"></span><span class="muted">${rows.length} 条</span></div><div class="table-card"><div class="table-scroll"><table class="data-table log-table"><thead><tr><th>时间</th><th>操作人</th><th>板块</th><th>ASIN</th><th>MSKU</th><th>FNSKU</th><th>店铺</th><th>处理类型</th><th>具体动作</th></tr></thead><tbody>${rows.length ? rows.map((action) => { const currentProduct = currentProductMap.get(`${action.shop || ""}::${action.msku || ""}`); return `<tr><td>${formatDateTime(action.created_at)}</td><td>${escapeHtml(action.user_name || "—")}</td><td><span class="pill pill-gray">${escapeHtml(BOARD[action.board]?.label || action.board || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.asin || currentProduct?.asin || "—")}</span></td><td><span class="mono">${escapeHtml(action.msku || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.fnsku || currentProduct?.fnsku || "—")}</span></td><td>${escapeHtml(action.shop || currentProduct?.shop || "—")}</td><td><span class="pill pill-blue log-action-type">${escapeHtml(action.action_type || "未分类")}</span></td><td><span class="subtle log-note" title="${attr(action.note || "")}">${escapeHtml(action.note || "—")}</span></td></tr>`; }).join("") : `<tr><td colspan="9"><div class="empty"><b>当前筛选下没有处理记录</b><span>组员可手动处理，也可点击“导入记录”批量写入</span></div></td></tr>`}</tbody></table></div></div>`;
+    const canDeleteActions = isManagementRole(state.profile.role);
+    $("#content").innerHTML = `<div class="page-head"><div><h1>处理记录</h1><p>处理动作已拆分为处理类型和具体动作；支持组员按标准模板批量导入，历史记录和当时指标快照永久保留。</p></div><div class="page-actions"><button class="btn btn-primary" data-action="open-action-import">导入记录</button><button class="btn" data-action="download-action-template">导入模板</button><button class="btn" data-action="export-logs">导出记录</button>${isCreatorRole(state.profile.role) ? `<button class="btn btn-danger" data-action="open-clear-history">清理历史记录</button>` : ""}</div></div><div class="hint"><strong>批量导入</strong><span>模板列为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作。系统优先按“店铺 + MSKU”匹配当前批次商品，并用 ASIN、FNSKU 校验；导入后自动保存当前指标快照。</span></div><div class="filter-bar"><select data-log-filter="user"><option value="">操作人：全部</option>${owners.map((owner) => `<option value="${attr(owner)}" ${state.logFilters.user === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}</select><select data-log-filter="board"><option value="">板块：全部</option>${BOARD_ORDER.map((key) => `<option value="${key}" ${state.logFilters.board === key ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select><select data-log-filter="time"><option value="week" ${state.logFilters.time === "week" ? "selected" : ""}>本周</option><option value="7d" ${state.logFilters.time === "7d" ? "selected" : ""}>近 7 天</option><option value="30d" ${state.logFilters.time === "30d" ? "selected" : ""}>近 30 天</option><option value="" ${!state.logFilters.time ? "selected" : ""}>全部时间</option></select><span class="filter-spacer"></span><span class="muted">${rows.length} 条</span></div><div class="table-card"><div class="table-scroll"><table class="data-table log-table"><thead><tr><th>时间</th><th>操作人</th><th>板块</th><th>ASIN</th><th>MSKU</th><th>FNSKU</th><th>店铺</th><th>处理类型</th><th>具体动作</th>${canDeleteActions ? "<th>清理</th>" : ""}</tr></thead><tbody>${rows.length ? rows.map((action) => { const currentProduct = currentProductMap.get(`${action.shop || ""}::${action.msku || ""}`); return `<tr><td>${formatDateTime(action.created_at)}</td><td>${escapeHtml(action.user_name || "—")}</td><td><span class="pill pill-gray">${escapeHtml(BOARD[action.board]?.label || action.board || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.asin || currentProduct?.asin || "—")}</span></td><td><span class="mono">${escapeHtml(action.msku || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.fnsku || currentProduct?.fnsku || "—")}</span></td><td>${escapeHtml(action.shop || currentProduct?.shop || "—")}</td><td><span class="pill pill-blue log-action-type">${escapeHtml(action.action_type || "未分类")}</span></td><td><span class="subtle log-note" title="${attr(action.note || "")}">${escapeHtml(action.note || "—")}</span></td>${canDeleteActions ? `<td><button class="link-btn danger-text" data-action="delete-action" data-id="${action.id}" title="只清理这一条处理记录">清理</button></td>` : ""}</tr>`; }).join("") : `<tr><td colspan="${canDeleteActions ? 10 : 9}"><div class="empty"><b>当前筛选下没有处理记录</b><span>组员可手动处理，也可点击“导入记录”批量写入</span></div></td></tr>`}</tbody></table></div></div>`;
+  }
+
+  async function deleteActionRecord(id) {
+    if (!isManagementRole(state.profile?.role)) { toast("当前账号没有清理处理记录的权限", "error"); return; }
+    const action = state.actions.find((item) => String(item.id) === String(id));
+    if (!action) { toast("没有找到这条处理记录", "error"); return; }
+    const label = `${action.msku || "—"} · ${action.shop || "—"} · ${action.action_type || "未分类"}`;
+    if (!confirm(`确认清理这条处理记录？
+
+${label}
+${action.note || ""}
+
+清理后会同步重新计算每周任务完成进度。`)) return;
+    try {
+      if (!state.demo) {
+        const { error, count } = await sb.from("actions").delete({ count: "exact" }).eq("id", action.id);
+        if (error) throw error;
+        if (!count) throw new Error("记录未删除，可能没有删除权限或记录已不存在");
+      }
+      state.actions = state.actions.filter((item) => String(item.id) !== String(id));
+      renderChrome();
+      renderView();
+      toast("这条处理记录已清理，任务完成进度已重新计算", "success");
+    } catch (error) {
+      toast(errorMessage(error), "error");
+    }
   }
 
   function openActionImportModal() {

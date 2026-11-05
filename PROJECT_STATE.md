@@ -2,9 +2,9 @@
 
 最后更新：2026-10-23
 
-当前线上版本：`v=32`  
+当前线上版本：`v=33`  
 状态：已发布，GitHub Pages 构建成功  
-最近发布：每周任务完成数改为按处理时选择的优化板块计数  
+最近发布：处理记录支持逐条清理并同步刷新任务进度  
 数据库迁移：`001`–`009` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=32`
+- 当前静态资源版本：`v=33`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -66,7 +66,7 @@
 
 ### 处理动作
 
-- 处理记录页提供“清理历史记录”按钮，仅创作者可用
+- 处理记录页提供“清理历史记录”按钮，仅创作者可用；主管和创作者可在每条具体动作后单独清理该条记录
 - 清理前需输入“清空全部记录”，确认后同步删除数据库 `actions` 数据
 - 清理不会删除产品、账号和周任务目标，但会同步清空任务完成进度
 
@@ -109,7 +109,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=32`，部署后不会继续加载旧版任务计数规则。
+- 当前静态资源缓存版本为 `v=33`，部署后不会继续加载旧版处理记录表格。
 
 计数规则：
 
