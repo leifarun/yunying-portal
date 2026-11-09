@@ -1593,6 +1593,7 @@ ${action.note || ""}
       if (!fnsku) rowErrors.push("FNSKU 为空");
       if (!shop) rowErrors.push("店铺为空");
       if (!actionType) rowErrors.push("处理类型为空");
+      else if (!ACTION_TYPES.includes(actionType)) rowErrors.push(`处理类型「${actionType}」不在下拉选项中`);
       if (!note) rowErrors.push("具体动作为空");
 
       const shopKey = normalizeActionMatch(shop), mskuKey = normalizeActionMatch(msku), asinKey = normalizeActionMatch(asin), fnskuKey = normalizeActionMatch(fnsku);
@@ -1728,30 +1729,83 @@ ${action.note || ""}
     }
   }
 
-  function downloadActionTemplate() {
-    const headers = ACTION_IMPORT_COLUMNS.map((column) => column.label);
-    const dataSheet = XLSX.utils.aoa_to_sheet([headers]);
-    dataSheet["!cols"] = [{ wch: 16 }, { wch: 24 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 60 }];
-    dataSheet["!autofilter"] = { ref: "A1:F1" };
-    const noteRows = [
-      ["运营三部 · 处理记录批量导入模板"],
-      ["字段", "填写说明"],
-      ["ASIN", "必填；用于校验商品身份，建议从系统当前 Listing 数据复制"],
-      ["MSKU", "必填；系统优先使用“店铺 + MSKU”匹配当前批次商品"],
-      ["FNSKU", "必填；导入时会与系统当前商品校验"],
-      ["店铺", "必填；必须与系统当前商品店铺一致"],
-      ["处理类型", `必填；用于归类，例如：${ACTION_TYPES.join(" / ")}`],
-      ["具体动作", "必填；写清实际执行内容和依据，例如：日预算 8 → 15，新增 4 个高相关词"],
-      ["匹配规则", "先按“店铺 + MSKU”匹配；找不到时再按“店铺 + ASIN”或唯一 ASIN 匹配"],
-      ["导入结果", "操作人自动记录为当前登录账号；处理时间按系统写入时间；每次导入都会保存当前指标快照"],
-      ["注意事项", "一行一条处理记录；不要修改表头；同一商品允许导入多条不同类型或不同动作的记录"]
-    ];
-    const noteSheet = XLSX.utils.aoa_to_sheet(noteRows);
-    noteSheet["!cols"] = [{ wch: 18 }, { wch: 88 }];
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, dataSheet, "处理记录");
-    XLSX.utils.book_append_sheet(workbook, noteSheet, "填写说明");
-    XLSX.writeFile(workbook, "处理记录_批量导入模板.xlsx");
+  function loadExcelJs() {
+    if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    if (window.__excelJsLoader) return window.__excelJsLoader;
+    window.__excelJsLoader = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "./vendor/exceljs.min.js?v=35";
+      script.onload = () => window.ExcelJS ? resolve(window.ExcelJS) : reject(new Error("ExcelJS 加载失败"));
+      script.onerror = () => reject(new Error("模板组件加载失败，请刷新页面后重试"));
+      document.head.appendChild(script);
+    });
+    return window.__excelJsLoader;
+  }
+
+  async function downloadActionTemplate() {
+    try {
+      toast("正在生成带下拉选项的模板…");
+      const ExcelJS = await loadExcelJs();
+      const headers = ACTION_IMPORT_COLUMNS.map((column) => column.label);
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "运营三部内部运营中台";
+      const dataSheet = workbook.addWorksheet("处理记录");
+      const headerRow = dataSheet.addRow(headers);
+      headerRow.height = 24;
+      headerRow.font = { bold: true };
+      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F6FA" } };
+      headerRow.eachCell((cell) => { cell.alignment = { vertical: "middle", horizontal: "center" }; });
+      dataSheet.columns = [{ width: 16 }, { width: 24 }, { width: 18 }, { width: 18 }, { width: 20 }, { width: 60 }];
+      dataSheet.views = [{ state: "frozen", ySplit: 1 }];
+      dataSheet.autoFilter = "A1:F1";
+      const validation = {
+        type: "list",
+        allowBlank: false,
+        formulae: ['"广告优化,Listing优化,价格调整,促销活动,库存处理,评价与售后,产品质量,其他"'],
+        showErrorMessage: true,
+        errorTitle: "处理类型无效",
+        error: "请从下拉列表中选择处理类型，不能手工填写其他值。",
+        showInputMessage: true,
+        promptTitle: "处理类型",
+        prompt: "请选择：广告优化 / Listing优化 / 价格调整 / 促销活动 / 库存处理 / 评价与售后 / 产品质量 / 其他"
+      };
+      for (let rowNumber = 2; rowNumber <= 5001; rowNumber++) {
+        dataSheet.getCell(rowNumber, 5).dataValidation = validation;
+      }
+      const noteRows = [
+        ["运营三部 · 处理记录批量导入模板"],
+        ["字段", "填写说明"],
+        ["ASIN", "必填；用于校验商品身份，建议从系统当前 Listing 数据复制"],
+        ["MSKU", "必填；系统优先使用“店铺 + MSKU”匹配当前批次商品"],
+        ["FNSKU", "必填；导入时会与系统当前商品校验"],
+        ["店铺", "必填；必须与系统当前商品店铺一致"],
+        ["处理类型", "必填；只能从 E 列下拉列表中选择，不允许手工填写其他值"],
+        ["可选处理类型", ACTION_TYPES.join(" / ")],
+        ["具体动作", "必填；写清实际执行内容和依据，例如：日预算 8 → 15，新增 4 个高相关词"],
+        ["匹配规则", "先按“店铺 + MSKU”匹配；找不到时再按“店铺 + ASIN”或唯一 ASIN 匹配"],
+        ["导入结果", "操作人自动记录为当前登录账号；处理时间按系统写入时间；每次导入都会保存当前指标快照"],
+        ["注意事项", "一行一条处理记录；不要修改表头；同一商品允许导入多条不同类型或不同动作的记录"]
+      ];
+      const noteSheet = workbook.addWorksheet("填写说明");
+      noteSheet.addRows(noteRows);
+      noteSheet.columns = [{ width: 18 }, { width: 88 }];
+      noteSheet.getRow(1).font = { bold: true, size: 14 };
+      noteSheet.getRow(2).font = { bold: true };
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "处理记录_批量导入模板.xlsx";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      toast("模板已导出，E 列可直接下拉选择处理类型", "success");
+    } catch (error) {
+      console.error(error);
+      toast(error.message || "模板生成失败", "error");
+    }
   }
 
   function openClearHistoryModal() {

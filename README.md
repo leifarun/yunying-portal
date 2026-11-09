@@ -2,14 +2,14 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=34`  
+当前线上版本：`v=35`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
 数据库迁移：`001`–`009` 已应用；`010` 待执行
 
 ## 当前发布摘要
 
 - 处理记录按 ASIN、MSKU、FNSKU、店铺四列展示商品信息，并将处理动作拆分为“处理类型”和“具体动作”
-- 处理记录页支持批量导入，模板固定为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作六列
+- 处理记录页支持批量导入，模板固定为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作六列，处理类型 E 列提供下拉选择
 - 总 Listing 导入模板精简为 31 列，退款率、CTR、ROAS、ACOS、ACoAS 等派生指标自动计算
 - 每周任务完成数按提交处理时选择的优化板块计数，不再按商品全部问题标签重复计数
 - 主管和创作者可按具体动作逐条清理处理记录，并同步刷新任务完成进度
@@ -230,7 +230,8 @@ yunying-portal/
 │  └─ styles.css
 ├─ vendor/
 │  ├─ supabase.js
-│  └─ xlsx.full.min.js
+│  ├─ xlsx.full.min.js
+│  └─ exceljs.min.js
 ├─ supabase/functions/admin-users/index.ts
 ├─ supabase/
 │  └─ migrations/
