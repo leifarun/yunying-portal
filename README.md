@@ -2,7 +2,7 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=33`  
+当前线上版本：`v=34`  
 正式网址：`https://leifarun.github.io/yunying-portal/`  
 数据库迁移：`001`–`009` 已应用；`010` 待执行
 
