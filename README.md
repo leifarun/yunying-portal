@@ -2,15 +2,21 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=35`  
-正式网址：`https://leifarun.github.io/yunying-portal/`  
-数据库迁移：`001`–`009` 已应用；`010` 待执行
+当前线上版本：`v=36`
+正式网址：`https://leifarun.github.io/yunying-portal/`
+数据库迁移：`001`–`009`、`011` 已应用；`010` 待执行
 
 ## 当前发布摘要
 
+- 总数据看板改为周批次汇总视图，按“人 × 周”存储指标快照，不保存逐 ASIN 看板汇总
+- 总数据看板新增“所有人 / 成员”筛选、团队指标对比表、四组指标趋势和点击放大历史趋势
+- 看板设计参考领星排行榜：连续白色面板、浅灰表头、细分隔线、数字右对齐
+- 总 Listing 导入模板从 31 列扩展为 33 列，新增 FBA不可售数量、订单毛利润额
+- 新增订单毛利率、平均单个利润、FBA不可售款数等派生指标
+
 - 处理记录按 ASIN、MSKU、FNSKU、店铺四列展示商品信息，并将处理动作拆分为“处理类型”和“具体动作”
 - 处理记录页支持批量导入，模板固定为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作六列，处理类型 E 列提供下拉选择
-- 总 Listing 导入模板精简为 31 列，退款率、CTR、ROAS、ACOS、ACoAS 等派生指标自动计算
+- 总 Listing 导入模板保留派生指标自动计算，退款率、CTR、ROAS、ACOS、ACoAS 等无需手工填写
 - 每周任务完成数按提交处理时选择的优化板块计数，不再按商品全部问题标签重复计数
 - 主管和创作者可按具体动作逐条清理处理记录，并同步刷新任务完成进度
 - 商品处理概览扩展为 12 项指标，新增价格和评分，并按 6 列 × 2 行展示
@@ -20,12 +26,12 @@
 - 创作者可在“账号与权限”中自定义网站名称，更新浏览器标签和品牌显示
 - 启动页缓存自定义名称，刷新时不会先显示旧的固定名称
 - 处理记录以时间线进度卡片显示指标改善/变差，指标周期快照仅来自实际处理记录
-- 每周导入不会自动生成产品指标快照；未处理过的商品没有历史周期指标
+- 每周导入不生成处理动作快照；看板周汇总单独保存，未处理过的商品仍没有处理周期指标
 
 ## 已实现
 
 - Supabase 用户名 + 密码登录，角色区分创作者、主管、组员
-- 总表看板与原型对齐：规模与销售、效率与质量、状态与风险、FBA 库龄饼图、各板块款数/货值、在售停售占比、国家站点、可展开店铺分布、人效表
+- 总数据看板：所有人/成员筛选、团队对比表、四组指标、周趋势图、点击放大历史数据；数据按人 × 周保存汇总快照
 - 总 Listing、8 个优化板块及滞销潜力分组
 - 原型式筛选栏：ASIN/MSKU/FNSKU 精确或模糊搜索、批量搜索、国家/店铺/负责人、问题定位、滞销类型、库龄、退款等级、库存与在售标签、列配置、分页、CSV 导出
 - 8 个优化板块列顺序与原型一致：ASIN、MSKU、FNSKU 开头，前三列冻结、右侧操作列冻结
@@ -48,7 +54,7 @@
 - 任务完成数按提交处理时选择的优化板块计数；同一板块重复动作只计 1 个商品
 - 导航数量使用完整千分位显示，不缩写为“万”
 - 页面字体统一为 Arial，商品编码使用清晰的等宽字体
-- 主管导入中心：31 列原始数据模板、派生指标自动计算、XLSX/CSV 校验、分批写入、临时批次、原子切换
+- 主管导入中心：33 列原始数据模板、派生指标自动计算、XLSX/CSV 校验、分批写入、临时批次、原子切换
 - 账号权限页：创作者管理全部账号，主管只能维护组员，状态使用在职/离职
 - 演示模式：`?demo=1`，只用于预览界面，不读写数据库
 
@@ -88,7 +94,9 @@
 
 `supabase/migrations/010_clear_action_history_safe_delete.sql`
 
-`001`–`009` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 修复 Supabase 防误删规则对清理函数的拦截，需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
+`supabase/migrations/011_weekly_metric_snapshots.sql`
+
+`001`–`009`、`011` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 修复 Supabase 防误删规则对清理函数的拦截，仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -97,6 +105,8 @@
 - 产品表新增 14 个字段存在
 - 周统计表已开启 RLS
 - 全团队产品、处理记录、周统计和周任务共 4 条读取策略已确认为 `is_active_user()`
+- `weekly_metric_snapshots` 表存在，当前批次已回填人员周汇总
+- `products.fba_unavail`、`products.order_gross_profit` 字段存在
 
 ## 数据保留规则
 
@@ -189,9 +199,9 @@ Supabase 提供的是数据库、认证和存储，不会自动托管这个静�
 
 `总Listing数据_导入模板.xlsx`
 
-支持 31 列标准字段。模板不再要求填写派生指标，新增两个原始字段：
+支持 33 列标准字段。模板不再要求填写派生指标，新增原始字段：
 
-`净销售额 / 广告销售额`
+`净销售额 / 广告销售额 / FBA不可售数量 / 订单毛利润额`
 
 系统会自动计算：
 
@@ -227,7 +237,9 @@ yunying-portal/
 ├─ assets/
 │  ├─ app.js
 │  ├─ config.js
-│  └─ styles.css
+│  ├─ styles.css
+│  ├─ summary-dashboard.js
+│  └─ summary-dashboard.css
 ├─ vendor/
 │  ├─ supabase.js
 │  ├─ xlsx.full.min.js
@@ -244,7 +256,8 @@ yunying-portal/
 │     ├─ 007_team_shared_data.sql
 │     ├─ 008_app_settings.sql
 │     ├─ 009_clear_action_history.sql
-│     └─ 010_clear_action_history_safe_delete.sql
+│     ├─ 010_clear_action_history_safe_delete.sql
+│     └─ 011_weekly_metric_snapshots.sql
 ├─ DEPLOY_NEW_DEPARTMENT.md
 ├─ README.md
 ├─ CHANGELOG.md

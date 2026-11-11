@@ -1,11 +1,11 @@
 # 运营三部内部运营中台 · 项目交接状态
 
-最后更新：2026-11-09
+最后更新：2026-11-11
 
-当前线上版本：`v=35`  
-状态：已发布，GitHub Pages 构建成功  
-最近发布：处理记录模板增加处理类型下拉验证  
-数据库迁移：`001`–`009` 已应用并验证；`010` 待应用
+当前线上版本：`v=36`
+状态：已发布，GitHub Pages 构建成功
+最近发布：总数据看板改版与导入模板新增指标
+数据库迁移：`001`–`009`、`011` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
 
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=35`
+- 当前静态资源版本：`v=36`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -36,15 +36,18 @@
 
 ## 三、当前已实现功能
 
-### 数据看板
+### 周批次经营看板
 
-- 规模与销售、效率与质量、状态与风险三组指标
-- FBA 八段库龄饼图
-- 各板块款数和货值饼图
-- 在售/停售占比
-- 国家/站点占比
-- 店铺分布可展开全部
-- 人效表
+- 看板按“每个人 × 每个导入批次”保存一条汇总快照，不保存逐 ASIN 汇总
+- 当前周在浏览器中按最新产品实时汇总，历史周使用 `weekly_metric_snapshots` 快照
+- 所有在职账号均可查看“所有人”及任意成员的数据
+- 顶部“查看范围”支持所有人及数据中出现的负责人，周批次可切换历史批次
+- 团队指标对比表参考领星排行榜样式：连续白色面板、浅灰表头、细分隔线、数字右对齐、负责人列固定
+- 点击负责人行可直接切换到个人数据
+- 销售指标、广告表现、商品效率、库存周转指标共四组
+- 每组指标都有周批次折线图，可配置最多 3 个趋势指标
+- 点击指标卡可放大查看当前值、环比、区间高低点和历史明细
+- 新增 FBA不可售、订单毛利润额、订单毛利率、平均单个利润、FBA不可售款数等看板指标
 
 ### 优化板块
 
@@ -109,7 +112,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=35`，部署后不会继续加载旧版处理记录模板。
+- 当前静态资源缓存版本为 `v=36`，部署后会加载新版总数据看板和 33 列导入模板。
 
 计数规则：
 
@@ -178,6 +181,7 @@
 - `thresholds`
 - `weekly_issue_stats`
 - `weekly_task_assignments`
+- `weekly_metric_snapshots`
 
 ### Edge Function
 
@@ -204,22 +208,23 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/008_app_settings.sql`（已应用并验证创作者写入）
 - `supabase/migrations/009_clear_action_history.sql`（已应用；已验证未授权请求会被拒绝）
 - `supabase/migrations/010_clear_action_history_safe_delete.sql`（修复安全删除条件，需应用）
+- `supabase/migrations/011_weekly_metric_snapshots.sql`（已应用；人员周汇总表、产品新字段和自动快照函数）
 
 ## 五、导入与存储策略
 
 导入流程：
 
 1. 主管上传 XLSX/CSV
-2. 前端校验 31 列表头、负责人和原始指标
+2. 前端校验 33 列表头、负责人和原始指标
 3. 创建临时导入批次
 4. 分批写入产品
 5. 全部成功后切换当前批次
 6. 删除旧产品明细
-7. 保留 `actions`、`import_batches` 和周统计
+7. 保留 `actions`、`import_batches`、周统计和看板周汇总快照
 
-模板不再填写退款率、广告订单占比、CTR、广告CVR、ROAS、ACOS、ACoAS；这些指标统一由原始数据自动计算。净销售额存入产品源数据 JSON，无需新增数据库字段。
+模板新增 `FBA-不可售数量` 和 `订单毛利润额` 两列，总列数 33；退款率、广告订单占比、CTR、广告CVR、ROAS、ACOS、ACoAS、订单毛利率、平均单个利润由系统自动计算。FBA不可售和订单毛利润额已新增为产品字段。
 
-免费版 500MB 下，不建议累计每周全部产品明细，因此只保留当前批次明细。
+免费版 500MB 下，不建议累计每周全部产品明细，因此只保留当前批次明细；看板只长期保留每人每周一条汇总快照。
 
 ## 六、部署
 

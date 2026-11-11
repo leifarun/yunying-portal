@@ -136,7 +136,7 @@
     { key: "age331", label: "331-365 天", color: "#e5484d" },
     { key: "age365p", label: ">365 天", color: "#b23a3f" }
   ];
-  const PRODUCT_SELECT = "id,batch_id,msku,shop,asin,fnsku,sku,country,owner,sales,revenue,refund_qty,refund_rate,score,reviews,fba_avail,fba_value,ad_spend,ad_rev,ad_orders,imp,clk,price,sale_price,status,age_0_30,age_31_60,age_61_90,age_91_180,age_181_270,age_271_330,age_331_365,age_365p,age_0_60,age_180p,acos,ctr,cvr,ad_share,cpc,roas,acoas,issue_keys,slow_type,refund_flag,raw";
+  const PRODUCT_SELECT = "id,batch_id,msku,shop,asin,fnsku,sku,country,owner,sales,revenue,refund_qty,refund_rate,score,reviews,fba_avail,fba_value,ad_spend,ad_rev,ad_orders,imp,clk,price,sale_price,status,age_0_30,age_31_60,age_61_90,age_91_180,age_181_270,age_271_330,age_331_365,age_365p,age_0_60,age_180p,acos,ctr,cvr,ad_share,cpc,roas,acoas,issue_keys,slow_type,refund_flag,raw,fba_unavail,order_gross_profit";
   const DEFAULT_THRESHOLD_VALUES = {
     1: "4", 2: "4", 3: "40", 4: "5", 5: "0.6", 6: "100", 7: "100", 8: "100", 9: "100",
     10: "40", 11: "0.6", 12: "5", 13: "—", 14: "—", 15: "20", 16: "—", 17: "—",
@@ -148,7 +148,7 @@
     { key: "country", label: "国家", width: 70 }, { key: "shop", label: "店铺", width: 100 }, { key: "owner", label: "负责人", width: 70 },
     { key: "status", label: "状态", width: 64 }, { key: "sales", label: "销量", width: 62 }, { key: "revenue", label: "销售额", width: 78 }, { key: "net_sales", label: "净销售额", width: 82 },
     { key: "refund_qty", label: "退款量", width: 62 }, { key: "refund_rate", label: "退款率", width: 66 }, { key: "score", label: "评分", width: 54 },
-    { key: "reviews", label: "评论数", width: 62 }, { key: "fba_avail", label: "FBA可售", width: 72 }, { key: "kxb", label: "库销比", width: 64 },
+    { key: "reviews", label: "评论数", width: 62 }, { key: "fba_avail", label: "FBA可售", width: 72 }, { key: "fba_unavail", label: "FBA不可售", width: 76 }, { key: "kxb", label: "库销比", width: 64 },
     { key: "ad_spend", label: "广告花费", width: 74 }, { key: "ad_orders", label: "广告订单量", width: 78 }, { key: "ad_rev", label: "广告销售额", width: 82 }, { key: "ad_share", label: "广告订单占比", width: 84 },
     { key: "imp", label: "展示", width: 72 }, { key: "clk", label: "点击", width: 62 }, { key: "ctr", label: "CTR", width: 62 },
     { key: "cvr", label: "广告CVR", width: 70 }, { key: "cpc", label: "CPC", width: 60 }, { key: "roas", label: "ROAS", width: 60 },
@@ -156,11 +156,11 @@
     { key: "sale_price", label: "优惠价", width: 72 }, { key: "age0", label: "0-30天", width: 62 }, { key: "age31", label: "31-60天", width: 62 },
     { key: "age61", label: "61-90天", width: 62 }, { key: "age91", label: "91-180天", width: 66 }, { key: "age181", label: "181-270天", width: 72 },
     { key: "age271", label: "271-330天", width: 72 }, { key: "age331", label: "331-365天", width: 72 }, { key: "age365p", label: "365天+", width: 62 },
-    { key: "fba_value", label: "FBA货值", width: 76 }, { key: "issue", label: "系统判定", width: 152 }
+    { key: "fba_value", label: "FBA货值", width: 76 }, { key: "order_gross_profit", label: "订单毛利润额", width: 100 }, { key: "gross_margin", label: "订单毛利率", width: 86 }, { key: "issue", label: "系统判定", width: 152 }
   ];
 
   const NAV_SECTIONS = [
-    { title: "数据视图", items: [{ view: "dashboard", label: "总表数据看板", icon: "◫" }, { view: "products", board: "all", label: "总 Listing 数据", icon: "▦" }] },
+    { title: "数据视图", items: [{ view: "dashboard", label: "总数据看板", icon: "◫" }, { view: "products", board: "all", label: "总 Listing 数据", icon: "▦" }] },
     { title: "优化板块", items: [
       { view: "board", board: "show", label: "1. 展示量差的", icon: "◉" },
       { view: "board", board: "needad", label: "└ 1.1 需开广告", icon: "＋", sub: true },
@@ -202,7 +202,9 @@
     { key: "score", label: "评分", aliases: ["评分"] },
     { key: "reviews", label: "评论数", aliases: ["评论数"] },
     { key: "fba_avail", label: "FBA-可售数量", aliases: ["fba-可售数量", "fba可售数量", "fba可售"] },
+    { key: "fba_unavail", label: "FBA-不可售数量", aliases: ["fba-不可售数量", "fba不可售数量", "fba不可售"] },
     { key: "fba_value", label: "FBA货值（可售+不可售）", aliases: ["fba货值（可售+不可售）", "fba货值", "货值"] },
+    { key: "order_gross_profit", label: "订单毛利润额", aliases: ["订单毛利润额", "订单毛利额", "毛利润额"] },
     { key: "ad_spend", label: "广告花费", aliases: ["广告花费"] },
     { key: "ad_orders", label: "广告订单量", aliases: ["广告订单量", "广告订单"] },
     { key: "ad_rev", label: "广告销售额", aliases: ["广告销售额", "广告销售额（近30天）", "广告销售额(近30天)"] },
@@ -221,7 +223,7 @@
     { key: "age_331_365", label: "331<=库龄<=365天", aliases: ["331<=库龄<=365天", "331-365天", "331-365"] },
     { key: "age_365p", label: "365<=库龄", aliases: ["365<=库龄", "365+库龄", "365+", ">365"] }
   ];
-  const PRODUCT_NUMERIC_KEYS = new Set(["sales", "revenue", "net_sales", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "kxb", "ad_spend", "ad_orders", "ad_rev", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
+  const PRODUCT_NUMERIC_KEYS = new Set(["sales", "revenue", "net_sales", "refund_qty", "refund_rate", "score", "reviews", "fba_avail", "fba_unavail", "order_gross_profit", "gross_margin", "avg_profit", "kxb", "ad_spend", "ad_orders", "ad_rev", "ad_share", "imp", "clk", "ctr", "cvr", "cpc", "roas", "acos", "acoas", "price", "sale_price", "age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p", "fba_value"]);
   const REQUIRED_IMPORT_KEYS = ["asin", "msku", "shop", "owner", "sales", "revenue", "net_sales", "refund_qty", "fba_avail", "ad_spend", "ad_orders", "ad_rev", "imp", "clk", "status"];
   const VALID_STATUS = new Set(["在售", "停售", "搜索禁止显示", "无在售信息"]);
   const DEFAULT_SITE_NAME = "运营三部 · 内部运营中台";
@@ -234,7 +236,7 @@
   let fixedHScrollSource = null;
   const state = {
     session: null, profile: null, profiles: [], batches: [], currentBatch: null,
-    products: [], actions: [], weeklyStats: [], weeklyAssignments: [], thresholds: [], appSettings: {}, view: "dashboard", board: "all",
+    products: [], actions: [], weeklyStats: [], weeklySnapshots: [], weeklyAssignments: [], thresholds: [], appSettings: {}, view: "dashboard", board: "all",
     page: 1, pageSize: 50, loading: false, busy: false, demo: false, filters: {}, shopAll: false, hiddenCols: new Set(),
     sortKey: null, sortDir: "desc",
     logFilters: { user: "", board: "", time: "30d" }, selectedWeekId: null, pendingImport: null, pendingActionImport: null
@@ -356,7 +358,7 @@
     state.profiles = names.map((name, i) => ({ id: `demo-${i}`, name, role: i === 0 ? "主管" : "组员", login_name: `demo${i}`, active: true }));
     state.currentBatch = { id: 1, week_no: 43, week_start: "2026-10-19", week_end: "2026-10-25", file_name: "本周Listing数据.xlsx", row_count: 12, is_current: true, status: "已生效", created_at: "2026-10-21T10:20:00+08:00" };
     state.batches = [state.currentBatch];
-    const base = { country: "沙特阿拉伯", reviews: 18, fba_value: 1200, ad_rev: null, age_0_30: 10, age_31_60: 8, age_61_90: 5, age_91_180: 3, age_181_270: 1, age_271_330: 0, age_331_365: 0, age_365p: 0, price: 59.9, sale_price: 54.9 };
+    const base = { country: "沙特阿拉伯", reviews: 18, fba_value: 1200, fba_unavail: 2, order_gross_profit: 28, ad_rev: null, age_0_30: 10, age_31_60: 8, age_61_90: 5, age_91_180: 3, age_181_270: 1, age_271_330: 0, age_331_365: 0, age_365p: 0, price: 59.9, sale_price: 54.9 };
     const raw = [
       { ...base, asin: "B0DEMO0001", msku: "DEMO-001", fnsku: "X001", shop: "lontime", owner: "王丹", status: "在售", sales: 2, revenue: 110, refund_qty: 0, score: 4.5, fba_avail: 100, ad_spend: 12, ad_orders: 1, imp: 1000, clk: 10, acos: 0.36 },
       { ...base, asin: "B0DEMO0002", msku: "DEMO-002", fnsku: "X002", shop: "lumix", owner: "胡昕怡", status: "在售", sales: 0, revenue: 0, refund_qty: 0, score: 4.2, fba_avail: 10, ad_spend: 0, ad_orders: 0, imp: 0, clk: 0, acos: 0 },
@@ -371,6 +373,7 @@
       { ...base, asin: "B0DEMO0011", msku: "DEMO-011", fnsku: "X011", shop: "lontime", owner: "胡昕怡", status: "在售", sales: 10, revenue: 520, refund_qty: 0, score: 4.7, fba_avail: 8, ad_spend: 5, ad_orders: 4, imp: 10000, clk: 100, acos: 0.08 },
       { ...base, asin: "B0DEMO0012", msku: "DEMO-012", fnsku: "X012", shop: "lumix", owner: "梁茜", status: "停售", sales: 0, revenue: 0, refund_qty: 0, score: 0, fba_avail: 18, ad_spend: 0, ad_orders: 0, imp: 0, clk: 0 }
     ];
+    state.weeklySnapshots = [];
     state.products = raw.map((row) => normalizeProduct({ ...row, issue_keys: [] }));
     state.actions = [
       { id: 11, batch_id: 1, msku: "DEMO-001", shop: "lontime", board: "show", action_type: "广告优化", note: "日预算 8 → 15，新增 4 个高相关词，7 天后看展示是否达到 3 万。", expected_result: null, status: "已处理", user_name: "王丹", created_at: "2026-10-21T09:20:00+08:00", snapshot: { asin: "B0DEMO0001" } },
@@ -575,20 +578,22 @@
     if (state.loading) return;
     setLoading(true); setSync("busy", "同步中");
     try {
-      const [profilesResult, batchesData, weeklyData, actionsData, thresholdsData, assignmentsData, settingsData] = await Promise.all([
+      const [profilesResult, batchesData, weeklyData, actionsData, thresholdsData, assignmentsData, settingsData, weeklySnapshotsData] = await Promise.all([
         sb.from("profiles").select("*").is("archived_at", null).order("name"),
         loadAllRows("import_batches", (query) => query.order("created_at", { ascending: true }).order("id", { ascending: true })),
         loadAllRows("weekly_issue_stats", (query) => query.order("id", { ascending: true })),
         loadAllRows("actions", (query) => query.order("id", { ascending: true })),
         loadAllRows("thresholds", (query) => query.order("id", { ascending: true })),
         loadAllRows("weekly_task_assignments", (query) => query.order("id", { ascending: true })),
-        loadAllRows("app_settings", (query) => query.order("key", { ascending: true })).catch((error) => { console.warn("app_settings unavailable", error); return []; })
+        loadAllRows("app_settings", (query) => query.order("key", { ascending: true })).catch((error) => { console.warn("app_settings unavailable", error); return []; }),
+        loadAllRows("weekly_metric_snapshots", (query) => query.order("week_start", { ascending: true })).catch((error) => { console.warn("weekly_metric_snapshots unavailable", error); return []; })
       ]);
       if (profilesResult.error) throw profilesResult.error;
       state.profiles = profilesResult.data || []; state.batches = (batchesData || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       state.weeklyStats = weeklyData || []; state.actions = (actionsData || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       state.thresholds = thresholdsData || []; state.weeklyAssignments = assignmentsData || [];
       state.appSettings = Object.fromEntries((settingsData || []).map((row) => [row.key, row.value]));
+      state.weeklySnapshots = weeklySnapshotsData || [];
       if (state.appSettings.site_name) setCachedSiteName(state.appSettings.site_name);
       applySiteName();
       state.currentBatch = state.batches.find((batch) => batch.is_current) || state.batches[0] || null;
@@ -634,7 +639,7 @@
       while (cursor < starts.length) {
         const index = cursor++;
         const { data, error } = await sb.from("products")
-          .select(PRODUCT_SELECT)
+          .select("*")
           .eq("batch_id", batchId)
           .order("owner", { ascending: true })
           .order("id", { ascending: true })
@@ -683,7 +688,7 @@
 
   function renderView() {
     if (state.loading) return; closeUserMenu();
-    const titles = { dashboard: "总表数据看板", products: "总 Listing 数据", board: BOARD[state.board]?.label || "优化板块", weekly: "每周处理进度", logs: "处理记录", thresholds: "阈值与公式", import: "导入中心", settings: "账号与权限" };
+    const titles = { dashboard: "总数据看板", products: "总 Listing 数据", board: BOARD[state.board]?.label || "优化板块", weekly: "每周处理进度", logs: "处理记录", thresholds: "阈值与公式", import: "导入中心", settings: "账号与权限" };
     $("#crumbRoot").textContent = state.view === "board" || state.view === "products" ? "数据与优化" : titles[state.view] || "";
     $("#crumbPage").textContent = titles[state.view] || "";
     renderNav();
@@ -805,7 +810,7 @@
 
   function normalizeProduct(row) {
     const p = { ...row };
-    const sales = num(p.sales), revenue = num(p.revenue), refundQty = num(p.refund_qty), fbaAvail = num(p.fba_avail);
+    const sales = num(p.sales), revenue = num(p.revenue), refundQty = num(p.refund_qty), fbaAvail = num(p.fba_avail), fbaUnavail = num(p.fba_unavail), orderGrossProfit = num(p.order_gross_profit);
     const adSpend = num(p.ad_spend), adOrders = num(p.ad_orders), imp = num(p.imp), clk = num(p.clk);
     let age0 = num(p.age_0_30), age31 = num(p.age_31_60), age61 = num(p.age_61_90), age91 = num(p.age_91_180);
     let age181 = num(p.age_181_270), age271 = num(p.age_271_330), age331 = num(p.age_331_365), age365p = num(p.age_365p);
@@ -850,6 +855,8 @@
     const acos = adRevenue > 0 ? adSpend / adRevenue : legacyAcos;
     const acoas = netSales > 0 ? adSpend / netSales : num(p.acoas);
     const refundRate = sales > 0 ? refundQty / sales : 0;
+    const grossMargin = netSales > 0 ? orderGrossProfit / netSales : 0;
+    const avgProfit = sales > 0 ? orderGrossProfit / sales * 1.7 : 0;
     const status = p.status || "";
     const needad = status === "在售" && fbaAvail >= 1 && adSpend <= 0 && imp <= 0;
     let cat = "";
@@ -871,7 +878,7 @@
     if (adSpend > adSpendMin && (acos > acosLimit || adOrders <= 0)) issueKeys.push("ad");
     if (refundFlag) issueKeys.push("refund");
     if (num(p.score) > 0 && num(p.score) < scoreLimit) issueKeys.push("score");
-    return { ...p, sales, revenue, net_sales: netSales, refund_qty: refundQty, refund_rate: refundRate, score: num(p.score), reviews: num(p.reviews), fba_avail: fbaAvail, fba_value: num(p.fba_value), ad_spend: adSpend, ad_rev: adRevenue, ad_orders: adOrders, imp, clk, price: num(p.price), sale_price: num(p.sale_price), age0, age31, age61, age91, age181, age271, age331, age365p, old60, old90, old180, old270, kxb, needMo, needOrders, needClk, needImp, ctr, cvr, cpc, roas, acos, acoas, adShare, refundFlag, slowType, needad, cat, issueKeys: [...new Set(issueKeys)], _key: `${p.shop || ""}::${p.msku || ""}` };
+    return { ...p, sales, revenue, net_sales: netSales, refund_qty: refundQty, refund_rate: refundRate, score: num(p.score), reviews: num(p.reviews), fba_avail: fbaAvail, fba_unavail: fbaUnavail, fba_value: num(p.fba_value), order_gross_profit: orderGrossProfit, gross_margin: grossMargin, avg_profit: avgProfit, ad_spend: adSpend, ad_rev: adRevenue, ad_orders: adOrders, imp, clk, price: num(p.price), sale_price: num(p.sale_price), age0, age31, age61, age91, age181, age271, age331, age365p, old60, old90, old180, old270, kxb, needMo, needOrders, needClk, needImp, ctr, cvr, cpc, roas, acos, acoas, adShare, refundFlag, slowType, needad, cat, issueKeys: [...new Set(issueKeys)], _key: `${p.shop || ""}::${p.msku || ""}` };
   }
 
   function hasIssue(p, key) {
@@ -960,56 +967,19 @@
   }
 
   function renderDashboard() {
-    const dashboard = buildDashboardData(state.products);
-    const boardRows = [
-      { key: "show", label: "1. 展示量差的" }, { key: "needad", label: "1.1 需开广告" },
-      { key: "click", label: "2. 点击率差的" }, { key: "cvr", label: "3. 转化率差的" },
-      { key: "c4", label: "4. 自然流量偏低" }, { key: "slow_total", label: "5. 滞销品优化" },
-      { key: "sl_low", label: "5.1 低潜力" }, { key: "sl_mid", label: "5.2 中潜力" }, { key: "sl_high", label: "5.3 高潜力" },
-      { key: "ad", label: "6. 广告无效花费" }, { key: "refund_total", label: "7. 高退货率" }, { key: "score", label: "8. 低评分优化" }
-    ];
-    const boxMap = new Map(dashboard.boxes.map((item) => [item.key, item]));
-    const nMax = Math.max(1, ...dashboard.boxes.map((item) => item.count));
-    const valueItems = boardRows.filter((row) => row.key !== "slow_total").map((row, index) => ({ l: row.label, v: boxMap.get(row.key)?.value || 0, c: DASH_PALETTE[index % DASH_PALETTE.length] }));
-    const shopShown = state.shopAll ? dashboard.shops : dashboard.shops.slice(0, 8);
-    const shopMax = Math.max(1, ...dashboard.shops.map((item) => item.value));
-    const countryMax = Math.max(1, ...dashboard.countries.map((item) => item.value));
-    const stack = dashboard.ageItems.map((item) => {
-      const pct = dashboard.ageTotal ? item.v / dashboard.ageTotal * 100 : 0;
-      return `<div title="${item.label} ${fmt(item.v)} 件 ${pct.toFixed(1)}%" style="width:${pct.toFixed(2)}%;background:${item.color}">${pct >= 7 ? `<span>${pct.toFixed(0)}%</span>` : ""}</div>`;
-    }).join("");
-    const people = dashboard.owners.slice();
-    const efficiencyRows = dashboard.owners.map((person) => {
-      const ownProducts = state.products.filter((p) => (p.owner || "未分配") === person.label);
-      const cells = boardRows.map((board) => `<td class="num">${dashboardMetricCell(dashboardBoardProducts(ownProducts, board.key).length, ownProducts.length)}</td>`).join("");
-      return `<tr><td><b>${escapeHtml(person.label)}</b></td><td class="num"><b>${fmt(person.value)}</b></td><td class="num muted">${(person.value / Math.max(dashboard.total, 1) * 100).toFixed(1)}%</td>${cells}</tr>`;
-    }).join("");
-    const totalAgeText = fmt(dashboard.ageTotal);
-    $("#content").innerHTML = `
-      <div class="page-head"><div><h1>总表数据看板</h1><p>${state.currentBatch ? `${weekText(state.currentBatch)} · 当前批次已生效` : "等待主管导入第一份周数据"}</p></div><div class="page-actions"><span class="pill pill-blue">${escapeHtml(state.profile.role)}</span><span class="pill pill-green">数据实时同步</span></div></div>
-      <section class="ksec"><div class="ksec-title">规模与销售</div><div class="kpi-grid dash-kpi-grid">
-        <div class="kpi blue"><div class="kpi-label">FBA 货值合计</div><div class="kpi-value">¥${fmt(dashboard.totalValue)}</div><div class="kpi-sub">全部产品</div></div>
-        <div class="kpi"><div class="kpi-label">FBA 可售库存</div><div class="kpi-value">${fmt(dashboard.totalStock)} 件</div><div class="kpi-sub">占总库存 ${dashboard.ageTotal ? (dashboard.totalStock / dashboard.ageTotal * 100).toFixed(1) : "0.0"}%</div></div>
-        <div class="kpi blue"><div class="kpi-label">近30天总销量</div><div class="kpi-value">${fmt(dashboard.totalSales)} 件</div><div class="kpi-sub">客单价 ¥${dashboard.avgPrice.toFixed(0)}</div></div>
-        <div class="kpi blue"><div class="kpi-label">近30天总销售额</div><div class="kpi-value">¥${fmt(Math.round(dashboard.totalRevenue))}</div><div class="kpi-sub">实际销售额</div></div>
-      </div></section>
-      <section class="ksec"><div class="ksec-title">效率与质量</div><div class="kpi-grid dash-kpi-grid five">
-        <div class="kpi orange"><div class="kpi-label">出单率</div><div class="kpi-value">${(dashboard.rateOnsaleStock * 100).toFixed(1)}%</div><div class="kpi-sub">每 ${Math.max(2, Math.round(1 / (dashboard.rateOnsaleStock || 1)))} 款里 1 款出单</div></div>
-        <div class="kpi green"><div class="kpi-label">FBA 库销比</div><div class="kpi-value">${dashboard.kxb >= 900 ? "∞" : dashboard.kxb.toFixed(2)} 个月</div><div class="kpi-sub">${dashboard.kxb <= thresholdNumber(1, 4) ? `健康（低于 ${thresholdNumber(1, 4)} 个月）` : `高于健康线 ${thresholdNumber(1, 4)} 个月`}</div></div>
-        <div class="kpi red"><div class="kpi-label">总 ACOS</div><div class="kpi-value">${(dashboard.acos * 100).toFixed(2)}%</div><div class="kpi-sub">${dashboard.acos > thresholdNumber(15, 20) / 100 ? `高于警戒线 ${thresholdNumber(15, 20)}%` : `低于警戒线 ${thresholdNumber(15, 20)}%`}</div></div>
-        <div class="kpi"><div class="kpi-label">总 ACoAS</div><div class="kpi-value">${(dashboard.acoas * 100).toFixed(2)}%</div><div class="kpi-sub">广告费占净销售额</div></div>
-        <div class="kpi orange"><div class="kpi-label">总退货率</div><div class="kpi-value">${(dashboard.refundRate * 100).toFixed(2)}%</div><div class="kpi-sub">每 ${Math.max(2, Math.round(1 / (dashboard.refundRate || 1)))} 单退 1 单</div></div>
-      </div></section>
-      <section class="ksec"><div class="ksec-title">状态与风险</div><div class="kpi-grid dash-kpi-grid">
-        <div class="kpi green"><div class="kpi-label">在售</div><div class="kpi-value">${fmt(dashboard.onsale)} 款</div><div class="kpi-sub">占全部 ${(dashboard.onsale / Math.max(dashboard.total, 1) * 100).toFixed(1)}%</div></div>
-        <div class="kpi red"><div class="kpi-label">停售</div><div class="kpi-value">${fmt(dashboard.offsale)} 款</div><div class="kpi-sub">占全部 ${(dashboard.offsale / Math.max(dashboard.total, 1) * 100).toFixed(1)}%</div></div>
-        <div class="kpi orange"><div class="kpi-label">滞销品</div><div class="kpi-value">${fmt(dashboard.slowCount)} 款</div><div class="kpi-sub">占全部 ${(dashboard.slowCount / Math.max(dashboard.total, 1) * 100).toFixed(1)}%</div></div>
-        <div class="kpi red"><div class="kpi-label">库龄 > 180 天</div><div class="kpi-value">${fmt(dashboard.gt180)} 件</div><div class="kpi-sub">占总库存 ${(dashboard.gt180 / Math.max(dashboard.ageTotal, 1) * 100).toFixed(1)}%</div></div>
-      </div></section>
-      <section class="card dashboard-section"><div class="card-head"><div><h2>FBA 库龄分布（共 ${totalAgeText} 件）</h2><p>按 8 个库龄段统计库存件数</p></div></div><div class="card-body"><div class="chart-row">${donutSvg(dashboard.ageItems, `${totalAgeText} 件`, "总库存", 150)}${chartLegend(dashboard.ageItems, dashboard.ageTotal, " 件")}</div><div class="stack-bar">${stack || `<div class="empty">暂无库龄数据</div>`}</div></div></section>
-      <div class="dashboard-grid dashboard-chart-grid"><section class="card"><div class="card-head"><div><h2>各板块款数（共 ${fmt(dashboard.total)} 款）</h2><p>同一产品可能命中多个板块</p></div></div><div class="card-body">${boardRows.map((row, index) => { const item = boxMap.get(row.key); return dashboardBar(row.label, item.count, nMax, DASH_PALETTE[index % DASH_PALETTE.length], (item.count / Math.max(dashboard.total, 1) * 100).toFixed(1) + "%", `${fmt(item.count)} 款`); }).join("")}</div></section><section class="card"><div class="card-head"><div><h2>各板块 FBA 货值（共 ¥${fmt(dashboard.totalValue)}）</h2><p>按板块归集货值，产品可重复计入</p></div></div><div class="card-body"><div class="chart-row">${donutSvg(valueItems, `¥${Math.round(dashboard.totalValue / 1000)}k`, "FBA 总货值", 150)}${chartLegend(valueItems, dashboard.totalValue)}</div></div></section></div>
-      <div class="dashboard-grid dashboard-chart-grid"><section class="card"><div class="card-head"><div><h2>在售 / 停售 占比</h2><p>按 Listing 状态统计</p></div></div><div class="card-body"><div class="chart-row">${donutSvg([{ l: "在售", v: dashboard.onsale, c: "#12a150" }, { l: "停售", v: dashboard.offsale, c: "#e5484d" }], fmt(dashboard.total), "产品款数", 150)}${chartLegend([{ l: "在售", v: dashboard.onsale, c: "#12a150" }, { l: "停售", v: dashboard.offsale, c: "#e5484d" }], dashboard.total, " 款")}</div><h3 class="subhead">国家 / 站点占比</h3>${dashboard.countries.map((item, index) => dashboardBar(item.label, item.value, countryMax, ["#2f6fed", "#7c4dff"][index % 2], (item.value / Math.max(dashboard.total, 1) * 100).toFixed(1) + "%", `${fmt(item.value)} 款`)).join("")}</div></section><section class="card"><div class="card-head"><div><h2>店铺分布（共 ${fmt(dashboard.total)} 款）</h2><p>按当前批次产品数统计</p></div><button class="link-btn" data-action="toggle-shop-all">${state.shopAll ? "收起" : "展开全部"}</button></div><div class="card-body">${shopShown.map((item, index) => dashboardBar(item.label, item.value, shopMax, DASH_PALETTE[index % DASH_PALETTE.length], (item.value / Math.max(dashboard.total, 1) * 100).toFixed(1) + "%", `${fmt(item.value)} 款`)).join("")}${dashboard.shops.length > 8 ? `<button class="expand-link" data-action="toggle-shop-all">${state.shopAll ? "收起 ▴" : `展开全部 ${dashboard.shops.length} 个店铺 ▾`}</button>` : ""}</div></section></div>
-      <section class="card dashboard-section"><div class="card-head"><div><h2>人效（每人名下各板块数量）</h2><p>看每个人负责的产品在各优化板块的分布</p></div></div><div class="card-body table-scroll"><table class="dense dashboard-table"><thead><tr><th>负责人</th><th class="num">全部产品</th><th class="num">占比</th>${boardRows.map((row) => `<th class="num">${escapeHtml(row.label)}</th>`).join("")}</tr></thead><tbody>${efficiencyRows || `<tr><td colspan="${boardRows.length + 3}"><div class="empty">暂无负责人数据</div></td></tr>`}</tbody></table></div></section>`;
+    const content = $("#content");
+    if (window.SummaryDashboard?.mount) {
+      window.SummaryDashboard.mount(content, {
+        profile: state.profile,
+        profiles: state.profiles || [],
+        batches: state.batches || [],
+        currentBatchId: state.currentBatch?.id || null,
+        summaries: state.weeklySnapshots || [],
+        products: state.products || []
+      });
+      return;
+    }
+    content.innerHTML = `<div class="card"><div class="empty"><b>看板组件加载失败</b><span>请刷新页面后重试。</span></div></div>`;
   }
   function computeTeamProgress(batchId, products) {
     if (!batchId) return [];
@@ -1175,6 +1145,7 @@
     else if (key === "score") content = product.score || "—";
     else if (key === "reviews") content = fmt(product.reviews);
     else if (key === "fba_avail") { content = fmt(product.fba_avail); if (product.fba_avail <= 0) extraClass = "muted"; }
+    else if (key === "fba_unavail") { content = fmt(product.fba_unavail); if (product.fba_unavail > 0) extraClass = "warn"; }
     else if (key === "kxb") { content = product.kxb >= 900 ? "∞" : product.kxb.toFixed(1); if (product.kxb > thresholdNumber(1, 4)) extraClass = "warn"; }
     else if (key === "ad_spend") content = fmtMoney(product.ad_spend);
     else if (key === "ad_orders") content = fmt(product.ad_orders);
@@ -1192,6 +1163,8 @@
     else if (key === "sale_price") content = fmtMoney(product.sale_price);
     else if (["age0", "age31", "age61", "age91", "age181", "age271", "age331", "age365p"].includes(key)) content = fmt(product[key]);
     else if (key === "fba_value") content = fmtMoney(product.fba_value);
+    else if (key === "order_gross_profit") content = fmtMoney(product.order_gross_profit);
+    else if (key === "gross_margin") content = fmtPct(product.gross_margin);
     else if (key === "issue") content = `<div class="tag-list">${issueTagHtml(product)}</div>`;
     else content = escapeHtml(product[key] ?? "—");
     const classes = [numericKeys.has(key) ? "num" : "", extraClass, frozenClass].filter(Boolean).join(" ");
@@ -2056,11 +2029,11 @@ ${action.note || ""}
         asin: String(get("asin")).trim() || null, msku, fnsku: String(get("fnsku")).trim() || null, sku: null,
         country: String(get("country")).trim() || null, shop, owner,
         sales: num(get("sales")), revenue: num(get("revenue")), refund_qty: num(get("refund_qty")), refund_rate: 0,
-        score: num(get("score")), reviews: Math.round(num(get("reviews"))), fba_avail: Math.round(num(get("fba_avail"))), fba_value: num(get("fba_value")),
+        score: num(get("score")), reviews: Math.round(num(get("reviews"))), fba_avail: Math.round(num(get("fba_avail"))), fba_unavail: Math.round(num(get("fba_unavail"))), fba_value: num(get("fba_value")), order_gross_profit: num(get("order_gross_profit")),
         ad_spend: num(get("ad_spend")), ad_rev: num(get("ad_rev")), ad_orders: num(get("ad_orders")), imp: Math.round(num(get("imp"))), clk: Math.round(num(get("clk"))),
         ctr: 0, cvr: 0, cpc: 0, roas: 0, acos: 0, acoas: 0, ad_share: 0,
         status: status || "无在售信息", price: num(get("price")), sale_price: num(get("sale_price")),
-        age_0_30: Math.round(num(get("age_0_30"))), age_31_60: Math.round(num(get("age_31_60"))), age_61_90: Math.round(num(get("age_61_90"))), age_91_180: Math.round(num(get("age_91_180"))), age_181_270: Math.round(num(get("age_181_270"))), age_271_330: Math.round(num(get("age_271_330"))), age_331_365: Math.round(num(get("age_331_365"))), age_365p: Math.round(num(get("age_365p"))), raw: { net_sales: num(get("net_sales")) }
+        age_0_30: Math.round(num(get("age_0_30"))), age_31_60: Math.round(num(get("age_31_60"))), age_61_90: Math.round(num(get("age_61_90"))), age_91_180: Math.round(num(get("age_91_180"))), age_181_270: Math.round(num(get("age_181_270"))), age_271_330: Math.round(num(get("age_271_330"))), age_331_365: Math.round(num(get("age_331_365"))), age_365p: Math.round(num(get("age_365p"))), raw: { net_sales: num(get("net_sales")), fba_unavail: Math.round(num(get("fba_unavail"))), order_gross_profit: num(get("order_gross_profit")) }
       };
       const normalized = normalizeProduct(product);
       rows.push({ ...product, age_0_60: product.age_0_30 + product.age_31_60, age_61_90: product.age_61_90, age_91_180: product.age_91_180, age_180p: product.age_181_270 + product.age_271_330 + product.age_331_365 + product.age_365p, refund_rate: normalized.refundRate, refund_flag: normalized.refundFlag || null, slow_type: normalized.slowType || null, issue_keys: normalized.issueKeys, acos: normalized.acos, ctr: normalized.ctr, cvr: normalized.cvr, ad_share: normalized.adShare, cpc: normalized.cpc, roas: normalized.roas, acoas: normalized.acoas });
@@ -2128,10 +2101,10 @@ ${action.note || ""}
 
   function downloadTemplate() {
     const headers = IMPORT_COLUMNS.map((column) => column.label);
-    const sample = { "ASIN": "B0XXXXXXXX", "MSKU": "DEMO-001", "Fnsku": "X000000000", "国家": "沙特阿拉伯", "店铺": "lontime", "负责人": state.profile?.name || "王丹", "销量": 12, "销售额": 720.5, "净销售额": 680, "退款量": 0, "评分": 4.6, "评论数": 38, "FBA-可售数量": 25, "FBA货值（可售+不可售）": 800, "广告花费": 24.5, "广告订单量": 3, "广告销售额": 180.5, "展示": 5200, "点击": 45, "状态": "在售", "价格(原价)": 59.9, "优惠价(当前listing前台价格)": 54.9 };
+    const sample = { "ASIN": "B0XXXXXXXX", "MSKU": "DEMO-001", "Fnsku": "X000000000", "国家": "沙特阿拉伯", "店铺": "lontime", "负责人": state.profile?.name || "王丹", "销量": 12, "销售额": 720.5, "净销售额": 680, "退款量": 0, "评分": 4.6, "评论数": 38, "FBA-可售数量": 25, "FBA-不可售数量": 3, "FBA货值（可售+不可售）": 800, "订单毛利润额": 120.5, "广告花费": 24.5, "广告订单量": 3, "广告销售额": 180.5, "展示": 5200, "点击": 45, "状态": "在售", "价格(原价)": 59.9, "优惠价(当前listing前台价格)": 54.9 };
     const dataSheet = XLSX.utils.json_to_sheet([sample], { header: headers });
     dataSheet["!cols"] = headers.map((header) => ({ wch: Math.max(12, Math.min(28, header.length + 4)) }));
-    const noteRows = [["运营三部 · 总 Listing 数据导入模板"], ["字段", "说明"], ["一行主键", "MSKU + 店铺，同一文件内不可重复"], ["负责人", "必须与系统账号姓名完全一致"], ["新增原始字段", "净销售额与广告销售额为必填，用于计算 ACoAS、ROAS 和 ACOS"], ["自动计算", "退款率=退款量/销量；广告订单占比=广告订单量/销量；CTR=点击/展示；广告CVR=广告订单量/点击；ROAS=广告销售额/广告花费；ACOS=广告花费/广告销售额；ACoAS=广告花费/净销售额"], ["库龄", "按件数填写 8 个库龄段"], ["导入规则", "确认后清空旧产品明细，保留处理记录与历史周统计"]];
+    const noteRows = [["运营三部 · 总 Listing 数据导入模板"], ["字段", "说明"], ["一行主键", "MSKU + 店铺，同一文件内不可重复"], ["负责人", "必须与系统账号姓名完全一致"], ["新增原始字段", "净销售额、广告销售额、FBA不可售数量、订单毛利润额。FBA不可售数量用于汇总不可售库存和款数，订单毛利润额用于计算订单毛利率与平均单个利润。"], ["自动计算", "退款率=退款量/销量；广告订单占比=广告订单量/销量；CTR=点击/展示；广告CVR=广告订单量/点击；ROAS=广告销售额/广告花费；ACOS=广告花费/广告销售额；ACoAS=广告花费/净销售额；订单毛利率=订单毛利润额/净销售额；平均单个利润=订单毛利润额/销量×1.7"], ["库龄", "按件数填写 8 个库龄段；库龄货值按各库龄库存件数比例分摊 FBA货值"], ["导入规则", "确认后清空旧产品明细，保留处理记录、历史周统计和看板周汇总快照"]];
     const noteSheet = XLSX.utils.aoa_to_sheet(noteRows); noteSheet["!cols"] = [{ wch: 20 }, { wch: 72 }];
     const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, dataSheet, "总Listing数据"); XLSX.utils.book_append_sheet(workbook, noteSheet, "填写说明"); XLSX.writeFile(workbook, "总Listing数据_导入模板.xlsx");
   }
@@ -2331,7 +2304,7 @@ ${action.note || ""}
     downloadCsv(`处理记录_${todayStr()}.csv`, rows);
   }
   function exportBoardCsv() {
-    const rows = filteredProducts(state.view === "board" ? state.board : "all").map((p) => ({ ASIN: p.asin, MSKU: p.msku, FNSKU: p.fnsku, 国家: p.country, 店铺: p.shop, 负责人: p.owner, 状态: p.status, 销量: p.sales, 销售额: p.revenue, 净销售额: p.net_sales, 退款量: p.refund_qty, 退款率: p.refund_rate, 评分: p.score, FBA可售: p.fba_avail, FBA货值: p.fba_value, 广告花费: p.ad_spend, 广告订单: p.ad_orders, 广告销售额: p.ad_rev, 展示: p.imp, 点击: p.clk, CTR: p.ctr, 广告CVR: p.cvr, 库销比: p.kxb, 问题板块: p.issueKeys.map((key) => BOARD[key]?.label).join(" / ") }));
+    const rows = filteredProducts(state.view === "board" ? state.board : "all").map((p) => ({ ASIN: p.asin, MSKU: p.msku, FNSKU: p.fnsku, 国家: p.country, 店铺: p.shop, 负责人: p.owner, 状态: p.status, 销量: p.sales, 销售额: p.revenue, 净销售额: p.net_sales, 退款量: p.refund_qty, 退款率: p.refund_rate, 评分: p.score, FBA可售: p.fba_avail, FBA不可售: p.fba_unavail, FBA货值: p.fba_value, 订单毛利润额: p.order_gross_profit, 订单毛利率: p.gross_margin, 广告花费: p.ad_spend, 广告订单: p.ad_orders, 广告销售额: p.ad_rev, 展示: p.imp, 点击: p.clk, CTR: p.ctr, 广告CVR: p.cvr, 库销比: p.kxb, 问题板块: p.issueKeys.map((key) => BOARD[key]?.label).join(" / ") }));
     downloadCsv(`${BOARD[state.board]?.label || "总Listing数据"}_${todayStr()}.csv`, rows);
   }
   function exportWeeklyCsv() {
