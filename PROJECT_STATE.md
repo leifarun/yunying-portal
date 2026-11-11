@@ -5,7 +5,7 @@
 当前线上版本：`v=38`
 状态：已发布，GitHub Pages 构建成功
 最近发布：看板表格列配置与指标视觉优化
-数据库迁移：`001`–`009`、`011` 已应用并验证；`010`、`012` 待应用
+数据库迁移：`001`–`009`、`011`、`012` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
 
@@ -213,7 +213,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/009_clear_action_history.sql`（已应用；已验证未授权请求会被拒绝）
 - `supabase/migrations/010_clear_action_history_safe_delete.sql`（修复安全删除条件，需应用）
 - `supabase/migrations/011_weekly_metric_snapshots.sql`（已应用；人员周汇总表、产品新字段和自动快照函数）
-- `supabase/migrations/012_order_count_snapshot.sql`（待应用；订单量字段与周汇总订单数）
+- `supabase/migrations/012_order_count_snapshot.sql`（已应用；订单量字段与周汇总订单数）
 
 ## 五、导入与存储策略
 

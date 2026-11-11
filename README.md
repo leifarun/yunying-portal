@@ -4,7 +4,7 @@
 
 当前线上版本：`v=38`
 正式网址：`https://leifarun.github.io/yunying-portal/`
-数据库迁移：`001`–`009`、`011` 已应用；`010`、`012` 待执行
+数据库迁移：`001`–`009`、`011`、`012` 已应用；`010` 待执行
 
 ## 当前发布摘要
 
@@ -99,7 +99,7 @@
 
 `supabase/migrations/012_order_count_snapshot.sql`
 
-`001`–`009`、`011` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 和 `012_order_count_snapshot.sql` 仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
+`001`–`009`、`011`、`012` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -109,7 +109,8 @@
 - 周统计表已开启 RLS
 - 全团队产品、处理记录、周统计和周任务共 4 条读取策略已确认为 `is_active_user()`
 - `weekly_metric_snapshots` 表存在，当前批次已回填人员周汇总
-- `products.fba_unavail`、`products.order_gross_profit` 字段存在；`order_qty` 由待执行的 012 迁移补充
+- `products.fba_unavail`、`products.order_gross_profit`、`products.order_qty` 字段存在
+- `weekly_metric_snapshots.order_count` 字段存在，当前批次汇总已重建
 
 ## 数据保留规则
 
