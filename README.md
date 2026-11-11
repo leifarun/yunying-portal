@@ -2,17 +2,18 @@
 
 这是基于原 `运营中台原型.html` 改造的团队网页版最小可用版本。前端使用原生 HTML/CSS/JavaScript，数据、登录和处理记录存储在 Supabase。
 
-当前线上版本：`v=37`
+当前线上版本：`v=38`
 正式网址：`https://leifarun.github.io/yunying-portal/`
-数据库迁移：`001`–`009`、`011` 已应用；`010` 待执行
+数据库迁移：`001`–`009`、`011` 已应用；`010`、`012` 待执行
 
 ## 当前发布摘要
 
 - 总数据看板改为周批次汇总视图，按“人 × 周”存储指标快照，不保存逐 ASIN 看板汇总
 - 总数据看板新增“所有人 / 成员”筛选、团队指标对比表、四组指标趋势和点击放大历史趋势
 - 看板设计参考领星排行榜：连续白色面板、浅灰表头、细分隔线、数字右对齐
-- 总 Listing 导入模板从 31 列扩展为 33 列，新增 FBA不可售数量、订单毛利润额
+- 总 Listing 导入模板从 31 列扩展为 34 列，新增订单量、FBA不可售数量、订单毛利润额
 - 新增订单毛利率、平均单个利润、FBA不可售款数等派生指标
+- 团队指标对比支持默认销量降序、表头排序、列配置和自定义模板
 
 - 处理记录按 ASIN、MSKU、FNSKU、店铺四列展示商品信息，并将处理动作拆分为“处理类型”和“具体动作”
 - 处理记录页支持批量导入，模板固定为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作六列，处理类型 E 列提供下拉选择
@@ -54,7 +55,7 @@
 - 任务完成数按提交处理时选择的优化板块计数；同一板块重复动作只计 1 个商品
 - 导航数量使用完整千分位显示，不缩写为“万”
 - 页面字体统一为 Arial，商品编码使用清晰的等宽字体
-- 主管导入中心：33 列原始数据模板、派生指标自动计算、XLSX/CSV 校验、分批写入、临时批次、原子切换
+- 主管导入中心：34 列原始数据模板、派生指标自动计算、XLSX/CSV 校验、分批写入、临时批次、原子切换
 - 账号权限页：创作者管理全部账号，主管只能维护组员，状态使用在职/离职
 - 演示模式：`?demo=1`，只用于预览界面，不读写数据库
 
@@ -96,7 +97,9 @@
 
 `supabase/migrations/011_weekly_metric_snapshots.sql`
 
-`001`–`009`、`011` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 修复 Supabase 防误删规则对清理函数的拦截，仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
+`supabase/migrations/012_order_count_snapshot.sql`
+
+`001`–`009`、`011` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 和 `012_order_count_snapshot.sql` 仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 
@@ -106,7 +109,7 @@
 - 周统计表已开启 RLS
 - 全团队产品、处理记录、周统计和周任务共 4 条读取策略已确认为 `is_active_user()`
 - `weekly_metric_snapshots` 表存在，当前批次已回填人员周汇总
-- `products.fba_unavail`、`products.order_gross_profit` 字段存在
+- `products.fba_unavail`、`products.order_gross_profit` 字段存在；`order_qty` 由待执行的 012 迁移补充
 
 ## 数据保留规则
 
@@ -199,9 +202,9 @@ Supabase 提供的是数据库、认证和存储，不会自动托管这个静�
 
 `总Listing数据_导入模板.xlsx`
 
-支持 33 列标准字段。模板不再要求填写派生指标，新增原始字段：
+支持 34 列标准字段。模板不再要求填写派生指标，新增原始字段：
 
-`净销售额 / 广告销售额 / FBA不可售数量 / 订单毛利润额`
+`净销售额 / 广告销售额 / 订单量 / FBA不可售数量 / 订单毛利润额`
 
 系统会自动计算：
 
@@ -257,7 +260,8 @@ yunying-portal/
 │     ├─ 008_app_settings.sql
 │     ├─ 009_clear_action_history.sql
 │     ├─ 010_clear_action_history_safe_delete.sql
-│     └─ 011_weekly_metric_snapshots.sql
+│     ├─ 011_weekly_metric_snapshots.sql
+│     └─ 012_order_count_snapshot.sql
 ├─ DEPLOY_NEW_DEPARTMENT.md
 ├─ README.md
 ├─ CHANGELOG.md
