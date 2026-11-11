@@ -475,7 +475,7 @@
     const previous = selectedIndex > 0 ? series[selectedIndex - 1] : null;
     rt.lastView = { dataset, series, selectedIndex, batch, scope };
     const isCurrent = Number(batch.id) === Number(dataset.currentBatchId);
-    const weekOptions = dataset.batches.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>第 ${item.week_no} 周 · ${batchDateText(item)}${dataset.availableIds.has(Number(item.id)) ? "" : "（无汇总）"}</option>`).join("");
+    const weekOptions = dataset.batches.filter((item) => dataset.availableIds.has(Number(item.id))).map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>第 ${item.week_no} 周 · ${batchDateText(item)}</option>`).join("");
     const ownerOptions = [`<option value="all" ${scope === "all" ? "selected" : ""}>所有人</option>`, ...dataset.owners.map((owner) => `<option value="${escapeHtml(owner)}" ${scope === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`)].join("");
     return `
       <div class="sd-page-head"><div class="sd-page-title"><span class="sd-eyebrow">WEEKLY PERFORMANCE SNAPSHOT</span><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "所有成员合计" : `当前查看 ${escapeHtml(scope)}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label><span class="pill ${isCurrent ? "pill-green" : "pill-gray"}">${isCurrent ? "实时数据" : "历史快照"}</span><span class="pill pill-blue">汇总粒度：人 × 周</span></div></div>
