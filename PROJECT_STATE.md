@@ -2,9 +2,9 @@
 
 最后更新：2026-11-11
 
-当前线上版本：`v=38`
+当前线上版本：`v=39`
 状态：已发布，GitHub Pages 构建成功
-最近发布：看板表格列配置与指标视觉优化
+最近发布：网站标签页图标
 数据库迁移：`001`–`009`、`011`、`012` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=38`
+- 当前静态资源版本：`v=39`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -116,7 +116,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=38`，部署后会加载新版总数据看板和 33 列导入模板。
+- 当前静态资源缓存版本为 `v=39`，部署后会加载新版总数据看板和 33 列导入模板。
 
 计数规则：
 
