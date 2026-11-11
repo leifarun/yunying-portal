@@ -24,7 +24,8 @@
 - 周批次切换后自动重建看板汇总快照，旧产品明细清理不影响历史汇总
 - 新增 `assets/summary-dashboard.js`、`assets/summary-dashboard.css`
 - 新增迁移 `011_weekly_metric_snapshots.sql`
-- 静态资源版本更新为 `v=36`
+- 周批次下拉仅显示已有看板汇总的批次
+- 静态资源版本更新为 `v=37`
 
 ## 2026-11-09（处理类型下拉模板）
 
