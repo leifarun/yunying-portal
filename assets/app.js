@@ -163,15 +163,19 @@
   const NAV_SECTIONS = [
     { title: "数据视图", items: [{ view: "dashboard", label: "总数据看板", icon: "◫" }, { view: "products", board: "all", label: "总 Listing 数据", icon: "▦" }] },
     { title: "优化板块", items: [
-      { view: "board", board: "show", label: "1. 展示量差的", icon: "◉" },
-      { view: "board", board: "needad", label: "└ 1.1 需开广告", icon: "＋", sub: true },
+      { key: "show", view: "board", board: "show", label: "1. 展示量差的", icon: "◉", children: [
+        { key: "needad", view: "board", board: "needad", label: "1.1 需开广告", icon: "＋" }
+      ] },
       { view: "board", board: "click", label: "2. 点击率差的", icon: "↗" },
       { view: "board", board: "cvr", label: "3. 转化率差的", icon: "◎" },
       { view: "board", board: "c4", label: "4. 自然流量偏低", icon: "⌁" },
-      { view: "board", board: "slow", label: "5. 滞销品优化", icon: "◷" },
-      { view: "board", board: "sl_low", label: "└ 5.1 低潜力", icon: "◷", sub: true },
-      { view: "board", board: "sl_mid", label: "└ 5.2 中潜力", icon: "◷", sub: true },
-      { view: "board", board: "sl_high", label: "└ 5.3 高潜力", icon: "◷", sub: true },
+      { key: "slow", view: "board", board: "slow", label: "5. 滞销品优化", icon: "◷", children: [
+        { key: "slow_midlow", label: "5.1 中低潜力", icon: "◐", countBoards: ["sl_low", "sl_mid"], children: [
+          { key: "sl_low", view: "board", board: "sl_low", label: "5.1.1 低潜力", icon: "◷" },
+          { key: "sl_mid", view: "board", board: "sl_mid", label: "5.1.2 中潜力", icon: "◷" }
+        ] },
+        { key: "sl_high", view: "board", board: "sl_high", label: "5.2 高潜力", icon: "◷" }
+      ] },
       { view: "board", board: "ad", label: "6. 广告无效花费", icon: "◌" },
       { view: "board", board: "refund", label: "7. 高退货率", icon: "↩" },
       { view: "board", board: "score", label: "8. 低评分优化", icon: "☆" }
@@ -241,6 +245,7 @@
     session: null, profile: null, profiles: [], batches: [], currentBatch: null,
     products: [], actions: [], weeklyStats: [], weeklySnapshots: [], weeklyAssignments: [], thresholds: [], appSettings: {}, view: "dashboard", board: "all",
     page: 1, pageSize: 50, loading: false, busy: false, demo: false, filters: {}, shopAll: false, hiddenCols: new Set(),
+    expandedNavKeys: new Set(),
     sortKey: null, sortDir: "desc",
     logFilters: { user: "", board: "", time: "30d" }, selectedWeekId: null, pendingImport: null, pendingActionImport: null
   };
@@ -669,13 +674,47 @@
 
   function renderNav() {
     const html = NAV_SECTIONS.map((section) => {
-      const items = section.items.map((item) => {
-        const active = item.view === state.view && (item.view !== "board" || item.board === state.board || (item.board === "slow" && state.board.startsWith("sl_"))) ? "active" : "";
-        return `<button class="nav-item ${active} ${item.sub ? "sub" : ""}" data-nav="${item.view}" data-board="${item.board || ""}"><span class="nav-icon">${item.icon}</span><span class="nav-label">${escapeHtml(item.label)}</span><span class="nav-count">${navCount(item.view, item.board)}</span></button>`;
-      }).join("");
+      const items = section.items.map((item) => navItemHtml(item)).join("");
       return `<div class="nav-section">${escapeHtml(section.title)}</div>${items}`;
     }).join("");
     $("#nav").innerHTML = html;
+  }
+
+  function navItemIsActive(item) {
+    if (item.view !== state.view) return false;
+    if (item.view !== "board") return true;
+    return item.board === state.board;
+  }
+
+  function navItemContainsActive(item) {
+    if (navItemIsActive(item)) return true;
+    return (item.children || []).some((child) => navItemContainsActive(child));
+  }
+
+  function navItemHtml(item, depth = 0) {
+    const children = item.children || [];
+    const hasChildren = children.length > 0;
+    const active = navItemIsActive(item);
+    const branchActive = !active && hasChildren && children.some((child) => navItemContainsActive(child));
+    const expanded = hasChildren && state.expandedNavKeys.has(item.key);
+    const rowClass = `nav-row ${hasChildren ? "nav-branch" : "nav-leaf"}`;
+    const classes = ["nav-item", `nav-depth-${depth}`, active ? "active" : "", branchActive ? "branch-active" : ""].filter(Boolean).join(" ");
+    const navAttrs = item.view
+      ? `data-nav="${item.view}" data-board="${item.board || ""}"`
+      : `data-nav-toggle="${item.key}" aria-expanded="${expanded}"`;
+    const toggle = hasChildren
+      ? `<button class="nav-toggle" type="button" data-nav-toggle="${item.key}" aria-label="${expanded ? "折叠" : "展开"}${attr(item.label)}" aria-expanded="${expanded}"><span>⌄</span></button>`
+      : "";
+    const row = `<div class="${rowClass}"><button class="${classes}" type="button" ${navAttrs}><span class="nav-icon">${item.icon}</span><span class="nav-label">${escapeHtml(item.label)}</span><span class="nav-count">${navCountForItem(item)}</span></button>${toggle}</div>`;
+    const childHtml = expanded ? `<div class="nav-children">${children.map((child) => navItemHtml(child, depth + 1)).join("")}</div>` : "";
+    return row + childHtml;
+  }
+
+  function navCountForItem(item) {
+    if (item.countBoards?.length) {
+      return fmt(state.products.filter((product) => item.countBoards.some((board) => hasIssue(product, board))).length);
+    }
+    return navCount(item.view, item.board);
   }
 
   function navCount(view, board) {
@@ -715,6 +754,14 @@
   function closeUserMenu() { $("#userMenu")?.classList.add("hidden"); }
 
   function handleGlobalClick(event) {
+    const navToggle = event.target.closest("[data-nav-toggle]");
+    if (navToggle) {
+      const key = navToggle.dataset.navToggle;
+      if (state.expandedNavKeys.has(key)) state.expandedNavKeys.delete(key);
+      else state.expandedNavKeys.add(key);
+      renderNav();
+      return;
+    }
     const nav = event.target.closest("[data-nav]");
     if (nav) { setView(nav.dataset.nav, nav.dataset.board); return; }
     if (!event.target.closest("#userChip") && !event.target.closest("#userMenu")) closeUserMenu();
