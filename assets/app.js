@@ -97,6 +97,7 @@
     score: { label: "低评分优化", short: "低分", icon: "☆", color: "#d48a09", desc: "评分低于 3 分，需要检查差评原因、产品问题和 listing 预期管理。", formula: "0<评分<3" }
   };
   const BOARD_ORDER = ["show", "needad", "click", "cvr", "c4", "sl_low", "sl_mid", "sl_high", "ad", "refund", "score"];
+  const ACTION_BOARD_OPTIONS = BOARD_ORDER.map((key) => ({ key, label: BOARD[key].label }));
   const isCreatorRole = (role) => role === "创作者";
   const isManagementRole = (role) => role === "主管" || role === "创作者";
   const INTERNAL_EMAIL_DOMAIN = "staff.yunying.local";
@@ -185,6 +186,7 @@
     { key: "msku", label: "MSKU", aliases: ["msku", "seller sku", "seller-sku"] },
     { key: "fnsku", label: "FNSKU", aliases: ["fnsku", "fn sku"] },
     { key: "shop", label: "店铺", aliases: ["店铺", "shop"] },
+    { key: "board", label: "优化板块", aliases: ["优化板块", "板块"] },
     { key: "action_type", label: "处理类型", aliases: ["处理类型", "动作类型"] },
     { key: "note", label: "具体动作", aliases: ["具体动作", "处理动作"] }
   ];
@@ -1489,7 +1491,7 @@
       return true;
     });
     const canDeleteActions = isManagementRole(state.profile.role);
-    $("#content").innerHTML = `<div class="page-head"><div><h1>处理记录</h1><p>处理动作已拆分为处理类型和具体动作；支持组员按标准模板批量导入，历史记录和当时指标快照永久保留。</p></div><div class="page-actions"><button class="btn btn-primary" data-action="open-action-import">导入记录</button><button class="btn" data-action="download-action-template">导出模板文件</button><button class="btn" data-action="export-logs">导出记录</button>${isCreatorRole(state.profile.role) ? `<button class="btn btn-danger" data-action="open-clear-history">清理历史记录</button>` : ""}</div></div><div class="hint"><strong>批量导入</strong><span>模板列为 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作。系统优先按“店铺 + MSKU”匹配当前批次商品，并用 ASIN、FNSKU 校验；导入后自动保存当前指标快照。</span></div><div class="filter-bar"><select data-log-filter="user"><option value="">操作人：全部</option>${owners.map((owner) => `<option value="${attr(owner)}" ${state.logFilters.user === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}</select><select data-log-filter="board"><option value="">板块：全部</option>${BOARD_ORDER.map((key) => `<option value="${key}" ${state.logFilters.board === key ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select><select data-log-filter="time"><option value="week" ${state.logFilters.time === "week" ? "selected" : ""}>本周</option><option value="7d" ${state.logFilters.time === "7d" ? "selected" : ""}>近 7 天</option><option value="30d" ${state.logFilters.time === "30d" ? "selected" : ""}>近 30 天</option><option value="" ${!state.logFilters.time ? "selected" : ""}>全部时间</option></select><span class="filter-spacer"></span><span class="muted">${rows.length} 条</span></div><div class="table-card"><div class="table-scroll"><table class="data-table log-table"><thead><tr><th>时间</th><th>操作人</th><th>板块</th><th>ASIN</th><th>MSKU</th><th>FNSKU</th><th>店铺</th><th>处理类型</th><th>具体动作</th>${canDeleteActions ? "<th>清理</th>" : ""}</tr></thead><tbody>${rows.length ? rows.map((action) => { const currentProduct = currentProductMap.get(`${action.shop || ""}::${action.msku || ""}`); return `<tr><td>${formatDateTime(action.created_at)}</td><td>${escapeHtml(action.user_name || "—")}</td><td><span class="pill pill-gray">${escapeHtml(BOARD[action.board]?.label || action.board || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.asin || currentProduct?.asin || "—")}</span></td><td><span class="mono">${escapeHtml(action.msku || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.fnsku || currentProduct?.fnsku || "—")}</span></td><td>${escapeHtml(action.shop || currentProduct?.shop || "—")}</td><td><span class="pill pill-blue log-action-type">${escapeHtml(action.action_type || "未分类")}</span></td><td><span class="subtle log-note" title="${attr(action.note || "")}">${escapeHtml(action.note || "—")}</span></td>${canDeleteActions ? `<td><button class="link-btn danger-text" data-action="delete-action" data-id="${action.id}" title="只清理这一条处理记录">清理</button></td>` : ""}</tr>`; }).join("") : `<tr><td colspan="${canDeleteActions ? 10 : 9}"><div class="empty"><b>当前筛选下没有处理记录</b><span>组员可手动处理，也可点击“导入记录”批量写入</span></div></td></tr>`}</tbody></table></div></div>`;
+    $("#content").innerHTML = `<div class="page-head"><div><h1>处理记录</h1><p>处理动作已拆分为处理类型和具体动作；支持组员按标准模板批量导入，历史记录和当时指标快照永久保留。</p></div><div class="page-actions"><button class="btn btn-primary" data-action="open-action-import">导入记录</button><button class="btn" data-action="download-action-template">导出模板文件</button><button class="btn" data-action="export-logs">导出记录</button>${isCreatorRole(state.profile.role) ? `<button class="btn btn-danger" data-action="open-clear-history">清理历史记录</button>` : ""}</div></div><div class="hint"><strong>批量导入</strong><span>模板列为 ASIN、MSKU、FNSKU、店铺、优化板块、处理类型、具体动作。系统优先按“店铺 + MSKU”匹配当前批次商品，并用 ASIN、FNSKU 校验；导入后自动保存当前指标快照。</span></div><div class="filter-bar"><select data-log-filter="user"><option value="">操作人：全部</option>${owners.map((owner) => `<option value="${attr(owner)}" ${state.logFilters.user === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`).join("")}</select><select data-log-filter="board"><option value="">优化板块：全部</option>${BOARD_ORDER.map((key) => `<option value="${key}" ${state.logFilters.board === key ? "selected" : ""}>${escapeHtml(BOARD[key].label)}</option>`).join("")}</select><select data-log-filter="time"><option value="week" ${state.logFilters.time === "week" ? "selected" : ""}>本周</option><option value="7d" ${state.logFilters.time === "7d" ? "selected" : ""}>近 7 天</option><option value="30d" ${state.logFilters.time === "30d" ? "selected" : ""}>近 30 天</option><option value="" ${!state.logFilters.time ? "selected" : ""}>全部时间</option></select><span class="filter-spacer"></span><span class="muted">${rows.length} 条</span></div><div class="table-card"><div class="table-scroll"><table class="data-table log-table"><thead><tr><th>时间</th><th>操作人</th><th>优化板块</th><th>ASIN</th><th>MSKU</th><th>FNSKU</th><th>店铺</th><th>处理类型</th><th>具体动作</th>${canDeleteActions ? "<th>清理</th>" : ""}</tr></thead><tbody>${rows.length ? rows.map((action) => { const currentProduct = currentProductMap.get(`${action.shop || ""}::${action.msku || ""}`); return `<tr><td>${formatDateTime(action.created_at)}</td><td>${escapeHtml(action.user_name || "—")}</td><td><span class="pill pill-gray">${escapeHtml(BOARD[action.board]?.label || action.board || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.asin || currentProduct?.asin || "—")}</span></td><td><span class="mono">${escapeHtml(action.msku || "—")}</span></td><td><span class="mono">${escapeHtml(action.snapshot?.fnsku || currentProduct?.fnsku || "—")}</span></td><td>${escapeHtml(action.shop || currentProduct?.shop || "—")}</td><td><span class="pill pill-blue log-action-type">${escapeHtml(action.action_type || "未分类")}</span></td><td><span class="subtle log-note" title="${attr(action.note || "")}">${escapeHtml(action.note || "—")}</span></td>${canDeleteActions ? `<td><button class="link-btn danger-text" data-action="delete-action" data-id="${action.id}" title="只清理这一条处理记录">清理</button></td>` : ""}</tr>`; }).join("") : `<tr><td colspan="${canDeleteActions ? 10 : 9}"><div class="empty"><b>当前筛选下没有处理记录</b><span>组员可手动处理，也可点击“导入记录”批量写入</span></div></td></tr>`}</tbody></table></div></div>`;
   }
 
   async function deleteActionRecord(id) {
@@ -1522,7 +1524,7 @@ ${action.note || ""}
     if (!state.currentBatch || !state.products.length) { toast("当前没有产品批次，请先由主管导入 Listing 数据", "error"); return; }
     state.pendingActionImport = null;
     $("#modal").className = "modal wide";
-    $("#modal").innerHTML = `<div class="modal-head"><div><h2>批量导入处理记录</h2><div class="modal-subline">一行一条记录，操作人自动使用当前登录账号</div></div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="action-import-guide"><b>导入规则</b><span>表格必须包含 ASIN、MSKU、FNSKU、店铺、处理类型、具体动作。优先按“店铺 + MSKU”匹配当前批次商品，再用 ASIN、FNSKU 校验；处理时间按提交时间写入。</span></div><label class="dropzone action-import-dropzone"><input id="actionImportFile" type="file" accept=".xlsx,.xls,.csv"><span class="drop-icon">⇧</span><b>选择处理记录文件</b><p>支持 .xlsx、.xls、.csv。文件会先在浏览器中校验，确认后才会写入 Supabase。</p></label><div id="actionImportPreview"></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn" data-action="download-action-template">下载导入模板</button><button class="btn btn-primary" data-action="confirm-action-import" disabled>确认导入</button></div>`;
+    $("#modal").innerHTML = `<div class="modal-head"><div><h2>批量导入处理记录</h2><div class="modal-subline">一行一条记录，操作人自动使用当前登录账号</div></div><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="action-import-guide"><b>导入规则</b><span>表格必须包含 ASIN、MSKU、FNSKU、店铺、优化板块、处理类型、具体动作。优先按“店铺 + MSKU”匹配当前批次商品，再用 ASIN、FNSKU 校验；处理时间按提交时间写入。</span></div><label class="dropzone action-import-dropzone"><input id="actionImportFile" type="file" accept=".xlsx,.xls,.csv"><span class="drop-icon">⇧</span><b>选择处理记录文件</b><p>支持 .xlsx、.xls、.csv。文件会先在浏览器中校验，确认后才会写入 Supabase。</p></label><div id="actionImportPreview"></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn" data-action="download-action-template">下载导入模板</button><button class="btn btn-primary" data-action="confirm-action-import" disabled>确认导入</button></div>`;
     showModal();
   }
 
@@ -1561,13 +1563,16 @@ ${action.note || ""}
       const rowNo = index + 2;
       const get = (key) => String(valueFromRow(row, headerMap, ACTION_IMPORT_COLUMNS.find((column) => column.key === key)) ?? "").trim();
       const asin = get("asin"), msku = get("msku"), fnsku = get("fnsku"), shop = get("shop");
-      const actionType = get("action_type"), note = get("note");
-      if (![asin, msku, fnsku, shop, actionType, note].some(Boolean)) return;
+      const boardLabel = get("board"), actionType = get("action_type"), note = get("note");
+      const boardOption = ACTION_BOARD_OPTIONS.find((item) => item.label === boardLabel);
+      if (![asin, msku, fnsku, shop, boardLabel, actionType, note].some(Boolean)) return;
       const rowErrors = [];
       if (!asin) rowErrors.push("ASIN 为空");
       if (!msku) rowErrors.push("MSKU 为空");
       if (!fnsku) rowErrors.push("FNSKU 为空");
       if (!shop) rowErrors.push("店铺为空");
+      if (!boardLabel) rowErrors.push("优化板块为空");
+      else if (!boardOption) rowErrors.push(`优化板块「${boardLabel}」不在下拉选项中`);
       if (!actionType) rowErrors.push("处理类型为空");
       else if (!ACTION_TYPES.includes(actionType)) rowErrors.push(`处理类型「${actionType}」不在下拉选项中`);
       if (!note) rowErrors.push("具体动作为空");
@@ -1593,7 +1598,7 @@ ${action.note || ""}
         errors.push(`第 ${rowNo} 行：${rowErrors.join("；")}`);
         return;
       }
-      rows.push({ rowNo, productKey: product._key, asin, msku, fnsku, shop, actionType, note });
+      rows.push({ rowNo, productKey: product._key, asin, msku, fnsku, shop, board: boardOption.key, boardLabel: boardOption.label, actionType, note });
     });
 
     if (!rows.length && !errors.length) errors.push("文件中没有有效数据行");
@@ -1635,7 +1640,7 @@ ${action.note || ""}
     const errors = job.errors || [], warnings = job.warnings || [], rows = job.rows || [];
     const errorHtml = errors.length ? `<div class="validation-list">${errors.slice(0, 20).map((error) => `<div class="validation-item">${escapeHtml(error)}</div>`).join("")}</div>${errors.length > 20 ? `<p class="muted">另有 ${errors.length - 20} 个问题未显示</p>` : ""}` : "";
     const warningHtml = warnings.length ? `<div class="validation-list">${warnings.map((warning) => `<div class="validation-item warn">${escapeHtml(warning)}</div>`).join("")}</div>` : "";
-    const previewHtml = rows.length ? `<div class="table-card action-import-preview-card"><div class="table-scroll"><table class="data-table action-import-preview-table"><thead><tr><th>行号</th><th>商品</th><th>处理类型</th><th>具体动作</th></tr></thead><tbody>${rows.slice(0, 10).map((row) => `<tr><td>${row.rowNo}</td><td><b class="mono">${escapeHtml(row.msku)}</b><small class="subtle">${escapeHtml(row.shop)} · ${escapeHtml(row.asin)}</small></td><td><span class="pill pill-blue">${escapeHtml(row.actionType)}</span></td><td><span class="log-note" title="${attr(row.note)}">${escapeHtml(row.note)}</span></td></tr>`).join("")}</tbody></table></div></div>${rows.length > 10 ? `<p class="muted">仅预览前 10 条，实际将导入 ${fmt(rows.length)} 条</p>` : ""}` : "";
+    const previewHtml = rows.length ? `<div class="table-card action-import-preview-card"><div class="table-scroll"><table class="data-table action-import-preview-table"><thead><tr><th>行号</th><th>商品</th><th>优化板块</th><th>处理类型</th><th>具体动作</th></tr></thead><tbody>${rows.slice(0, 10).map((row) => `<tr><td>${row.rowNo}</td><td><b class="mono">${escapeHtml(row.msku)}</b><small class="subtle">${escapeHtml(row.shop)} · ${escapeHtml(row.asin)}</small></td><td><span class="pill pill-gray">${escapeHtml(row.boardLabel)}</span></td><td><span class="pill pill-blue">${escapeHtml(row.actionType)}</span></td><td><span class="log-note" title="${attr(row.note)}">${escapeHtml(row.note)}</span></td></tr>`).join("")}</tbody></table></div></div>${rows.length > 10 ? `<p class="muted">仅预览前 10 条，实际将导入 ${fmt(rows.length)} 条</p>` : ""}` : "";
     host.innerHTML = `<div class="import-summary"><div class="action-import-summary"><div><span>文件</span><b>${escapeHtml(job.fileName)}</b></div><div><span>有效记录</span><b>${fmt(rows.length)}</b></div><div><span>校验问题</span><b class="${errors.length ? "bad" : "good"}">${fmt(errors.length)}</b></div></div>${errorHtml}${warningHtml}${previewHtml}${!errors.length && rows.length ? `<div class="action-import-ready"><b>校验通过</b><span>确认后将写入 ${fmt(rows.length)} 条记录，操作人为 ${escapeHtml(state.profile.name)}。</span></div>` : ""}</div>`;
   }
 
@@ -1655,7 +1660,7 @@ ${action.note || ""}
       payloads = job.rows.map((row) => {
         const product = productMap.get(row.productKey);
         if (!product) throw new Error(`第 ${row.rowNo} 行商品已变化，请刷新后重试`);
-        return actionRecordPayload(product, row.actionType, row.note, { asin: row.asin, fnsku: row.fnsku });
+        return actionRecordPayload(product, row.actionType, row.note, { asin: row.asin, fnsku: row.fnsku }, row.board);
       });
     } catch (error) {
       state.busy = false;
@@ -1731,10 +1736,21 @@ ${action.note || ""}
       headerRow.font = { bold: true };
       headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F6FA" } };
       headerRow.eachCell((cell) => { cell.alignment = { vertical: "middle", horizontal: "center" }; });
-      dataSheet.columns = [{ width: 16 }, { width: 24 }, { width: 18 }, { width: 18 }, { width: 20 }, { width: 60 }];
+      dataSheet.columns = [{ width: 16 }, { width: 24 }, { width: 18 }, { width: 18 }, { width: 22 }, { width: 20 }, { width: 60 }];
       dataSheet.views = [{ state: "frozen", ySplit: 1 }];
-      dataSheet.autoFilter = "A1:F1";
-      const validation = {
+      dataSheet.autoFilter = "A1:G1";
+      const boardValidation = {
+        type: "list",
+        allowBlank: false,
+        formulae: [`"${ACTION_BOARD_OPTIONS.map((item) => item.label).join(",")}"`],
+        showErrorMessage: true,
+        errorTitle: "优化板块无效",
+        error: "请从下拉列表中选择优化板块，不能手工填写其他值。",
+        showInputMessage: true,
+        promptTitle: "优化板块",
+        prompt: `请选择：${ACTION_BOARD_OPTIONS.map((item) => item.label).join(" / ")}`
+      };
+      const actionTypeValidation = {
         type: "list",
         allowBlank: false,
         formulae: ['"广告优化,Listing优化,价格调整,促销活动,库存处理,评价与售后,产品质量,其他"'],
@@ -1746,7 +1762,8 @@ ${action.note || ""}
         prompt: "请选择：广告优化 / Listing优化 / 价格调整 / 促销活动 / 库存处理 / 评价与售后 / 产品质量 / 其他"
       };
       for (let rowNumber = 2; rowNumber <= 5001; rowNumber++) {
-        dataSheet.getCell(rowNumber, 5).dataValidation = validation;
+        dataSheet.getCell(rowNumber, 5).dataValidation = boardValidation;
+        dataSheet.getCell(rowNumber, 6).dataValidation = actionTypeValidation;
       }
       const noteRows = [
         ["运营三部 · 处理记录批量导入模板"],
@@ -1755,7 +1772,9 @@ ${action.note || ""}
         ["MSKU", "必填；系统优先使用“店铺 + MSKU”匹配当前批次商品"],
         ["FNSKU", "必填；导入时会与系统当前商品校验"],
         ["店铺", "必填；必须与系统当前商品店铺一致"],
-        ["处理类型", "必填；只能从 E 列下拉列表中选择，不允许手工填写其他值"],
+        ["优化板块", "必填；只能从 E 列下拉列表中选择，导入后按该板块归属统计"],
+        ["可选优化板块", ACTION_BOARD_OPTIONS.map((item) => item.label).join(" / ")],
+        ["处理类型", "必填；只能从 F 列下拉列表中选择，不允许手工填写其他值"],
         ["可选处理类型", ACTION_TYPES.join(" / ")],
         ["具体动作", "必填；写清实际执行内容和依据，例如：日预算 8 → 15，新增 4 个高相关词"],
         ["匹配规则", "先按“店铺 + MSKU”匹配；找不到时再按“店铺 + ASIN”或唯一 ASIN 匹配"],
@@ -2308,7 +2327,7 @@ ${action.note || ""}
     }
   }
   function exportActionsCsv() {
-    const rows = state.actions.map((action) => ({ "时间": formatFullDateTime(action.created_at), "操作人": action.user_name || "", "板块": BOARD[action.board]?.label || action.board || "", "ASIN": action.snapshot?.asin || "", "MSKU": action.msku || "", "FNSKU": action.snapshot?.fnsku || "", "店铺": action.shop || "", "处理类型": action.action_type || "", "具体动作": action.note || "" }));
+    const rows = state.actions.map((action) => ({ "时间": formatFullDateTime(action.created_at), "操作人": action.user_name || "", "优化板块": BOARD[action.board]?.label || action.board || "", "ASIN": action.snapshot?.asin || "", "MSKU": action.msku || "", "FNSKU": action.snapshot?.fnsku || "", "店铺": action.shop || "", "处理类型": action.action_type || "", "具体动作": action.note || "" }));
     downloadCsv(`处理记录_${todayStr()}.csv`, rows);
   }
   function exportBoardCsv() {
