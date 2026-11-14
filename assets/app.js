@@ -89,7 +89,7 @@
     cvr: { label: "转化率差", short: "转化", icon: "◎", color: "#df4752", desc: "展示与点击达标但广告订单不足，重点检查五点、A+、视频、价格与评论。", formula: "展示、点击达标，且实际广告单 < 需要广告单" },
     c4: { label: "自然流量偏低", short: "自然流量", icon: "⌁", color: "#139a61", desc: "广告漏斗前三步都达标，但总销量仍不足，说明自然排名与权重需要拉升。", formula: "广告展示、点击、订单均达标，且总销量 < 需要月销量" },
     slow: { label: "滞销品优化", short: "滞销", icon: "◷", color: "#a56b20", desc: "近 30 天无销量的有库存商品，按点击潜力分成低、中、高潜力三级。", formula: "FBA可售>0 且 近30天销量=0" },
-    slow_midlow: { label: "中低潜力", short: "中低潜", icon: "◐", color: "#a56b20", desc: "低潜力或中潜力滞销商品，用于合并任务统计。", formula: "低潜力 或 中潜力" },
+    slow_midlow: { label: "中低潜力", short: "中低潜", icon: "◐", color: "#a56b20", desc: "集中查看低潜力与中潜力滞销商品，可分别筛选并直接处理。", formula: "低潜力 或 中潜力" },
     sl_low: { label: "低潜力滞销", short: "低潜", icon: "◷", color: "#9a7b48", desc: "有库存但点击少于 5 次，优先判断是否根本没有被看到。", formula: "销量=0 且 点击<5" },
     sl_mid: { label: "中潜力滞销", short: "中潜", icon: "◷", color: "#b66b22", desc: "已有少量点击但没有成交，重点看主图、价格、评价与详情页。", formula: "销量=0 且 5≤点击<10" },
     sl_high: { label: "高潜力滞销", short: "高潜", icon: "◷", color: "#8a4f16", desc: "点击达到 10 次以上仍无成交，是最值得优先抢救的一批。", formula: "销量=0 且 点击≥10" },
@@ -173,7 +173,7 @@
       { view: "board", board: "cvr", label: "转化率差" },
       { view: "board", board: "c4", label: "自然流量偏低" },
       { key: "slow", view: "board", board: "slow", label: "滞销品优化", children: [
-        { key: "slow_midlow", label: "中低潜力", countBoards: ["sl_low", "sl_mid"], children: [
+        { key: "slow_midlow", view: "board", board: "slow_midlow", label: "中低潜力", countBoards: ["sl_low", "sl_mid"], children: [
           { key: "sl_low", view: "board", board: "sl_low", label: "低潜力" },
           { key: "sl_mid", view: "board", board: "sl_mid", label: "中潜力" }
         ] },
@@ -937,6 +937,7 @@
 
   function hasIssue(p, key) {
     if (key === "slow") return (p.issueKeys || []).some((k) => k.startsWith("sl_"));
+    if (key === "slow_midlow") return (p.issueKeys || []).some((k) => ["sl_low", "sl_mid"].includes(k));
     return (p.issueKeys || []).includes(key);
   }
   function productsForBoard(boardKey) {
@@ -1154,7 +1155,10 @@
     if (boardKey === "slow") {
       specific += `<select data-filter="slowType"><option value="">滞销类型：全部</option><option value="none" ${f.slowType === "none" ? "selected" : ""}>A 非滞销</option><option value="sl_low" ${f.slowType === "sl_low" ? "selected" : ""}>B 低潜力</option><option value="sl_mid" ${f.slowType === "sl_mid" ? "selected" : ""}>C 中潜力</option><option value="sl_high" ${f.slowType === "sl_high" ? "selected" : ""}>D 高潜力</option></select>`;
     }
-    if (boardKey === "slow" || boardKey.startsWith("sl_")) {
+    if (boardKey === "slow_midlow") {
+      specific += `<select data-filter="slowType"><option value="">滞销类型：全部</option><option value="sl_low" ${f.slowType === "sl_low" ? "selected" : ""}>低潜力</option><option value="sl_mid" ${f.slowType === "sl_mid" ? "selected" : ""}>中潜力</option></select>`;
+    }
+    if (boardKey === "slow" || boardKey === "slow_midlow" || boardKey.startsWith("sl_")) {
       const ageBands = thresholdParts(21, [60, 90, 180, 270]);
       specific += `<select data-filter="ageBand"><option value="">库龄：不限</option>${ageBands.map((days) => `<option value="${days}" ${String(f.ageBand) === String(days) ? "selected" : ""}>库龄 > ${days} 天</option>`).join("")}</select>`;
     }
@@ -1175,7 +1179,13 @@
     const pageRows = rows.slice((state.page - 1) * state.pageSize, state.page * state.pageSize);
     const stockCount = rows.filter((p) => p.fba_avail > 0).length;
     const stockValue = rows.reduce((sum, p) => sum + p.fba_value, 0);
-    const actionCount = state.actions.filter((a) => Number(a.batch_id) === Number(state.currentBatch?.id) && (boardKey === "all" || (boardKey === "slow" ? String(a.board || "").startsWith("sl_") : a.board === boardKey))).length;
+    const actionCount = state.actions.filter((a) => {
+      if (Number(a.batch_id) !== Number(state.currentBatch?.id)) return false;
+      if (boardKey === "all") return true;
+      if (boardKey === "slow") return String(a.board || "").startsWith("sl_");
+      if (boardKey === "slow_midlow") return ["slow_midlow", "sl_low", "sl_mid"].includes(a.board);
+      return a.board === boardKey;
+    }).length;
     $("#content").innerHTML = `<div class="page-head"><div><h1>${escapeHtml(meta.label)}</h1><p>${escapeHtml(meta.desc)}</p></div><div class="page-actions"><span class="pill pill-gray">当前批次 ${state.currentBatch ? `第 ${state.currentBatch.week_no} 周` : "未导入"}</span></div></div><div class="hint"><strong>判定规则</strong><span>${escapeHtml(meta.formula)}</span></div><div class="kpi-grid list-kpi-grid"><div class="kpi"><div class="kpi-label">当前筛选商品</div><div class="kpi-value">${fmt(rows.length)}</div><div class="kpi-sub">来自 ${fmt(productsForBoard(boardKey).length)} 款板块商品</div></div><div class="kpi green"><div class="kpi-label">有库存商品</div><div class="kpi-value">${fmt(stockCount)}</div><div class="kpi-sub">货值 ¥${fmt(stockValue)}</div></div><div class="kpi purple"><div class="kpi-label">本批次处理动作</div><div class="kpi-value">${fmt(actionCount)}</div><div class="kpi-sub">处理记录永久保留</div></div></div>${boardFilterBar(boardKey, rows)}${productTable(pageRows, boardKey)}<div class="table-footer"><span>共 ${fmt(rows.length)} 条 · 第 ${state.page} / ${totalPages} 页${currentFilters().batchVals.length ? ` · 批量搜索 ${currentFilters().batchVals.length} 个 ${escapeHtml(currentFilters().batchField)}` : ""}</span><div class="pagination"><button data-action="prev-page" ${state.page <= 1 ? "disabled" : ""}>上一页</button><button data-action="next-page" ${state.page >= totalPages ? "disabled" : ""}>下一页</button></div></div>`;
   }
 
@@ -1268,7 +1278,9 @@
     showModal();
   }
   function resolveActionBoard(product, boardKey) {
-    if (boardKey && boardKey !== "all" && BOARD[boardKey]) return boardKey === "slow" ? (product.slowType || "sl_low") : boardKey;
+    if (boardKey && boardKey !== "all" && BOARD[boardKey]) {
+      return ["slow", "slow_midlow"].includes(boardKey) ? (product.slowType || "sl_low") : boardKey;
+    }
     return product.issueKeys[0] || "show";
   }
   function applyBatchSearch() {
