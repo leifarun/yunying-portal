@@ -83,7 +83,7 @@
 
   const SERIES_COLORS = ["#2e6ce6", "#0d9fb8", "#7656d8"];
   const METRIC_ACCENTS = ["#2e6ce6", "#0b93ad", "#139a61", "#d47b0b", "#7656d8", "#dd4b57"];
-  const RANGE_OPTIONS = [["4", "近4周"], ["8", "近8周"], ["12", "近12周"], ["all", "全部"], ["custom", "自定义"]];
+  const RANGE_OPTIONS = [["4", "近4周"], ["12", "近12周"], ["24", "近24周"], ["48", "近48周"]];
   const EXTRA_METRICS = {
     orderCount: { key: "orderCount", label: "订单量", unit: "单", format: "integer", goodWhen: "up" }
   };
@@ -572,6 +572,83 @@
     if (modal && runtime.modalMode === "team-columns") modal.innerHTML = renderTeamColumnModal(runtime);
   }
 
+  function allHistoryMetrics() {
+    const rows = [];
+    CATEGORIES.forEach((category) => METRICS[category.id].forEach((metric, index) => rows.push({ metric, category, index })));
+    const salesCategory = CATEGORIES.find((category) => category.id === "sales");
+    rows.splice(METRICS.sales.length, 0, { metric: EXTRA_METRICS.orderCount, category: salesCategory, index: METRICS.sales.length });
+    return rows;
+  }
+
+  function renderHistorySection(view, runtime) {
+    if (!view) return "";
+    const { series, visible, scope } = view;
+    const rows = allHistoryMetrics().filter((item) => runtime.historyMetrics.has(item.metric.key));
+    const name = scopeLabel(scope);
+    const headerCells = visible.map((item) => `<th title="第 ${escapeHtml(item.batch.week_no || "—")} 周">${escapeHtml(batchDateText(item.batch))}</th>`).join("");
+    const metricCell = ({ metric, category, index }, first) => {
+      const body = visible.map((item) => {
+        const value = toNum(item.snapshot[metric.key]);
+        const prior = item.seriesIndex > 0 ? toNum(series[item.seriesIndex - 1]?.[metric.key]) : null;
+        const delta = item.seriesIndex > 0 ? comparisonInfo(metric, value, prior) : null;
+        const unit = metricUnit(metric);
+        const deltaText = delta ? (item.seriesIndex === 0 ? "起始" : `${delta.arrow || ""} ${delta.text}`) : "—";
+        return `<td class="sd-hb-week" title="${escapeHtml(batchDateText(item.batch))} · 第 ${escapeHtml(item.batch.week_no || "—")} 周"><b>${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</b><em class="${delta ? delta.className : "sd-delta-flat"}">${deltaText}</em></td>`;
+      }).join("");
+      const nameCell = first ? `<td class="sd-hb-name" rowspan="${Math.max(1, rows.length)}"><b>${escapeHtml(name)}</b><small>${rows.length} 项指标</small></td>` : "";
+      return `${nameCell}<td class="sd-hb-metric" title="${escapeHtml(metric.hint || metric.label)}"><i style="background:${METRIC_ACCENTS[index % METRIC_ACCENTS.length]}"></i><b>${escapeHtml(metric.label)}</b><small>${escapeHtml(category.title)}</small></td>${body}`;
+    };
+    const bodyRows = rows.map((item, index) => `<tr>${metricCell(item, index === 0)}</tr>`).join("");
+    const empty = !rows.length
+      ? `<div class="sd-chart-empty">未选择任何指标，点击右上角“列配置”选择要对比的指标。</div>`
+      : !visible.length
+        ? `<div class="sd-chart-empty">所选日期范围内暂无批次数据。</div>`
+        : `<div class="sd-hb-scroll"><table class="sd-hb-table" aria-label="全指标历史对比"><thead><tr><th class="sd-hb-name-fix">人名</th><th class="sd-hb-metric-fix">指标</th>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+    return `
+      <section class="sd-section" id="sd-section-history" data-sd-section="history">
+        <div class="sd-section-card">
+          <header class="sd-section-head">
+            <div class="sd-section-title"><span class="sd-section-no">05</span><div><h2>全指标历史对比</h2><p>逐指标纵向对比 · 批次横向对比，单元格显示数值与较上期变化</p></div></div>
+            <div class="sd-section-tools"><button class="sd-small-btn" type="button" data-sd-open-history-columns>列配置</button><span class="pill pill-blue">${escapeHtml(rangeText(visible))}</span></div>
+          </header>
+          ${empty}
+        </div>
+      </section>`;
+  }
+
+  function renderHistoryColumnModal(runtime) {
+    const draft = runtime.historyDraft || new Set();
+    const groups = CATEGORIES.map((category) => {
+      const metrics = [...METRICS[category.id]];
+      if (category.id === "sales") metrics.splice(METRICS.sales.length, 0, EXTRA_METRICS.orderCount);
+      return `<div class="sd-hb-modal-group"><b>${escapeHtml(category.title)}</b><div class="sd-column-options">${metrics.map((metric) => `<label class="sd-column-option ${draft.has(metric.key) ? "selected" : ""}"><input type="checkbox" value="${metric.key}" ${draft.has(metric.key) ? "checked" : ""}><span>${escapeHtml(metric.label)}</span></label>`).join("")}</div></div>`;
+    }).join("");
+    return `
+      <div class="sd-modal-head"><div><span class="eyebrow">HISTORY COLUMNS</span><h2>全指标历史对比 · 列配置</h2><p>选择要在历史对比表中展示的指标行。</p></div><button class="sd-icon-btn" type="button" data-sd-close-modal>×</button></div>
+      <div class="sd-modal-body">
+        <div class="sd-preset-row"><span>快速选择</span><button type="button" class="sd-preset-btn" data-sd-history-preset="all">全部指标</button><button type="button" class="sd-preset-btn" data-sd-history-preset="sales">销售指标</button><button type="button" class="sd-preset-btn" data-sd-history-preset="ads">广告表现</button><button type="button" class="sd-preset-btn" data-sd-history-preset="efficiency">商品效率</button><button type="button" class="sd-preset-btn" data-sd-history-preset="inventory">库存周转</button></div>
+        <div class="sd-hb-modal-groups">${groups}</div>
+        <p class="sd-modal-hint">已选择 <b>${draft.size}</b> 项。表格首列固定显示当前查看范围的人名，右侧按周批次横向滚动。</p>
+      </div>
+      <div class="sd-modal-foot"><button class="btn" type="button" data-sd-close-modal>取消</button><button class="btn btn-primary" type="button" data-sd-apply-history-columns>应用列配置</button></div>`;
+  }
+
+  function openHistoryColumnModal(runtime) {
+    runtime.modalMode = "history-columns";
+    runtime.historyDraft = new Set(runtime.historyMetrics);
+    const modal = runtime.container.querySelector("[data-sd-modal]");
+    const mask = runtime.container.querySelector("[data-sd-modal-mask]");
+    if (!modal || !mask) return;
+    modal.innerHTML = renderHistoryColumnModal(runtime);
+    mask.classList.remove("hidden");
+    modal.classList.remove("hidden");
+  }
+
+  function refreshHistoryColumnModal(runtime) {
+    const modal = runtime.container.querySelector("[data-sd-modal]");
+    if (modal && runtime.modalMode === "history-columns") modal.innerHTML = renderHistoryColumnModal(runtime);
+  }
+
   function renderSnapshot(current, previous, scope, batch, isCurrent, visible) {
     const netDelta = current && previous?.netSales ? (current.netSales - previous.netSales) / previous.netSales : null;
     return `
@@ -587,22 +664,12 @@
   // Batch indexes shown in trend charts. Presets end at the selected batch.
   function rangeWindow(dataset, runtime, selectedIndex) {
     const indexes = dataset.batches.map((batch, index) => dataset.availableIds.has(Number(batch.id)) ? index : -1).filter((index) => index >= 0);
-    if (runtime.range === "custom") {
-      const fromIndex = dataset.batches.findIndex((batch) => Number(batch.id) === Number(runtime.rangeFrom));
-      const toIndex = dataset.batches.findIndex((batch) => Number(batch.id) === Number(runtime.rangeTo));
-      let from = fromIndex >= 0 ? fromIndex : indexes[0] ?? 0;
-      let to = toIndex >= 0 ? toIndex : indexes.at(-1) ?? 0;
-      if (from > to) [from, to] = [to, from];
-      return indexes.filter((index) => index >= from && index <= to);
-    }
     const upto = indexes.filter((index) => index <= selectedIndex);
-    return runtime.range === "all" ? upto : upto.slice(-Number(runtime.range || 12));
+    return upto.slice(-Number(runtime.range || 4));
   }
 
-  function renderRangeControl(available, runtime, visible) {
-    const options = (selectedId) => available.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(selectedId) ? "selected" : ""}>${batchDateText(item)}</option>`).join("");
-    const custom = runtime.range === "custom" ? `<span class="sd-range-custom"><select data-sd-range-from aria-label="开始批次">${options(visible[0]?.batch.id)}</select><span>至</span><select data-sd-range-to aria-label="结束批次">${options(visible.at(-1)?.batch.id)}</select></span>` : "";
-    return `<div class="sd-range"><span class="sd-range-label">趋势范围</span><div class="sd-segmented" role="group" aria-label="趋势日期范围">${RANGE_OPTIONS.map(([value, label]) => `<button type="button" class="${runtime.range === value ? "active" : ""}" data-sd-range="${value}" aria-pressed="${runtime.range === value}">${label}</button>`).join("")}</div>${custom}</div>`;
+  function renderRangeControl(runtime) {
+    return `<div class="sd-range"><span class="sd-range-label">趋势范围</span><div class="sd-segmented" role="group" aria-label="趋势日期范围">${RANGE_OPTIONS.map(([value, label]) => `<button type="button" class="${runtime.range === value ? "active" : ""}" data-sd-range="${value}" aria-pressed="${runtime.range === value}">${label}</button>`).join("")}</div></div>`;
   }
 
   function renderPage(rt) {
@@ -616,7 +683,7 @@
     const selectedIndex = Math.max(0, dataset.batches.findIndex((item) => Number(item.id) === Number(batch.id)));
     const current = series[selectedIndex] || null;
     const previous = selectedIndex > 0 ? series[selectedIndex - 1] : null;
-    const visible = rangeWindow(dataset, rt, selectedIndex).map((index) => ({ snapshot: series[index], batch: dataset.batches[index] })).filter((item) => item.snapshot);
+    const visible = rangeWindow(dataset, rt, selectedIndex).map((index) => ({ snapshot: series[index], batch: dataset.batches[index], seriesIndex: index })).filter((item) => item.snapshot);
     rt.lastView = { dataset, series, selectedIndex, batch, scope, visible, current, previous };
     const isCurrent = Number(batch.id) === Number(dataset.currentBatchId);
     const available = dataset.batches.filter((item) => dataset.availableIds.has(Number(item.id)));
@@ -626,8 +693,9 @@
       <div class="sd-page-head"><div class="sd-page-title"><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "所有成员合计" : `当前查看 ${escapeHtml(scope)}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label>${scope !== "all" ? `<button class="sd-small-btn" type="button" data-sd-scope-all>返回所有人</button>` : ""}</div></div>
       ${renderSnapshot(current, previous, scope, batch, isCurrent, visible)}
       ${scope === "all" ? renderComparison(dataset, batch, rt, current) : ""}
-      <div class="sd-category-nav">${CATEGORIES.map((category, index) => `<button class="sd-category-link ${index === 0 ? "active" : ""}" type="button" data-sd-scroll="${category.id}"><span>${category.number}</span>${escapeHtml(category.short)}</button>`).join("")}<span class="sd-nav-spacer"></span>${renderRangeControl(available, rt, visible)}</div>
+      <div class="sd-category-nav">${CATEGORIES.map((category, index) => `<button class="sd-category-link ${index === 0 ? "active" : ""}" type="button" data-sd-scroll="${category.id}"><span>${category.number}</span>${escapeHtml(category.short)}</button>`).join("")}<button class="sd-category-link" type="button" data-sd-scroll="history"><span>05</span>看板</button><span class="sd-nav-spacer"></span>${renderRangeControl(rt)}</div>
       <div>${CATEGORIES.map((category) => renderSection(category, visible, current, previous, dataset, rt)).join("")}</div>
+      ${renderHistorySection(rt.lastView, rt)}
       <div class="sd-modal-mask hidden" data-sd-modal-mask></div>
       <section class="sd-modal hidden" data-sd-modal role="dialog" aria-modal="true"></section>
       <div class="sd-zoom-mask hidden" data-sd-zoom-mask></div>
@@ -789,6 +857,30 @@
       refreshTeamColumnModal(runtime);
       return;
     }
+    const openHistoryColumns = event.target.closest("[data-sd-open-history-columns]");
+    if (openHistoryColumns) { openHistoryColumnModal(runtime); return; }
+    const applyHistoryColumns = event.target.closest("[data-sd-apply-history-columns]");
+    if (applyHistoryColumns) {
+      if (!runtime.historyDraft?.size) return;
+      runtime.historyMetrics = new Set(runtime.historyDraft);
+      closeModal(runtime);
+      render(runtime, true);
+      return;
+    }
+    const historyPreset = event.target.closest("[data-sd-history-preset]");
+    if (historyPreset) {
+      const key = historyPreset.dataset.sdHistoryPreset;
+      const presets = {
+        all: allHistoryMetrics().map((item) => item.metric.key),
+        sales: [...METRICS.sales.map((metric) => metric.key), "orderCount"],
+        ads: METRICS.ads.map((metric) => metric.key),
+        efficiency: METRICS.efficiency.map((metric) => metric.key),
+        inventory: METRICS.inventory.map((metric) => metric.key)
+      };
+      runtime.historyDraft = new Set(presets[key] || presets.all);
+      refreshHistoryColumnModal(runtime);
+      return;
+    }
     const sortButton = event.target.closest("[data-sd-sort-team]");
     if (sortButton) {
       const key = sortButton.dataset.sdSortTeam;
@@ -818,17 +910,7 @@
     if (personRow) { runtime.scope = personRow.dataset.sdPerson; render(runtime, true); return; }
     if (event.target.closest("[data-sd-scope-all]")) { runtime.scope = "all"; render(runtime, true); return; }
     const rangeButton = event.target.closest("[data-sd-range]");
-    if (rangeButton) {
-      const value = rangeButton.dataset.sdRange;
-      if (value === "custom" && runtime.range !== "custom") {
-        const visible = runtime.lastView?.visible || [];
-        runtime.rangeFrom = visible[0]?.batch.id || null;
-        runtime.rangeTo = visible.at(-1)?.batch.id || null;
-      }
-      runtime.range = value;
-      render(runtime, true);
-      return;
-    }
+    if (rangeButton) { runtime.range = rangeButton.dataset.sdRange; render(runtime, true); return; }
     const metricCard = event.target.closest("[data-sd-metric]");
     if (metricCard) { openZoom(metricCard.dataset.sdCategory, metricCard.dataset.sdMetric, runtime); return; }
     if (event.target.closest("[data-sd-close-zoom]")) { closeZoom(runtime); return; }
@@ -838,13 +920,16 @@
   function handleChange(event, runtime) {
     if (event.target.matches("[data-sd-week]")) { runtime.batchId = Number(event.target.value); render(runtime, true); return; }
     if (event.target.matches("[data-sd-scope]")) { runtime.scope = event.target.value; render(runtime, true); return; }
-    if (event.target.matches("[data-sd-range-from]")) { runtime.rangeFrom = Number(event.target.value); render(runtime, true); return; }
-    if (event.target.matches("[data-sd-range-to]")) { runtime.rangeTo = Number(event.target.value); render(runtime, true); return; }
     if (event.target.closest("[data-sd-modal]") && event.target.matches("input[type=checkbox]")) {
       const value = event.target.value;
       if (runtime.modalMode === "team-columns") {
         if (event.target.checked) runtime.teamConfigDraft.add(value); else runtime.teamConfigDraft.delete(value);
         refreshTeamColumnModal(runtime);
+        return;
+      }
+      if (runtime.modalMode === "history-columns") {
+        if (event.target.checked) runtime.historyDraft.add(value); else runtime.historyDraft.delete(value);
+        refreshHistoryColumnModal(runtime);
         return;
       }
       if (event.target.checked) {
@@ -915,9 +1000,9 @@
       data,
       scope: "all",
       batchId: Number(data.currentBatchId) || null,
-      range: "12",
-      rangeFrom: null,
-      rangeTo: null,
+      range: "4",
+      historyMetrics: new Set(allHistoryMetrics().map((item) => item.metric.key)),
+      historyDraft: new Set(),
       selections: defaultSelections(),
       editCategory: null,
       editSelection: [],
@@ -934,6 +1019,8 @@
     runtime.data = data;
     if (!runtime.batchId) runtime.batchId = Number(data.currentBatchId) || null;
     runtime.selections = runtime.selections || defaultSelections();
+    runtime.historyMetrics = runtime.historyMetrics instanceof Set ? runtime.historyMetrics : new Set(allHistoryMetrics().map((item) => item.metric.key));
+    runtime.historyDraft = runtime.historyDraft instanceof Set ? runtime.historyDraft : new Set();
     runtime.teamColumns = runtime.teamColumns || new Set(comparisonColumns().filter((column) => column.defaultVisible).map((column) => column.key));
     runtime.teamSortKey = runtime.teamSortKey || "sales";
     runtime.teamSortDir = runtime.teamSortDir || "desc";
