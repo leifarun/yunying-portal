@@ -83,7 +83,7 @@
 
   const SERIES_COLORS = ["#2e6ce6", "#0d9fb8", "#7656d8"];
   const METRIC_ACCENTS = ["#2e6ce6", "#0b93ad", "#139a61", "#d47b0b", "#7656d8", "#dd4b57"];
-  const RANGE_OPTIONS = [["4", "近4周"], ["12", "近12周"], ["24", "近24周"], ["48", "近48周"]];
+  const RANGE_OPTIONS = [["4", "近4周"], ["12", "近12周"], ["24", "近24周"], ["48", "近48周"], ["all", "全部"]];
   const EXTRA_METRICS = {
     orderCount: { key: "orderCount", label: "订单量", unit: "单", format: "integer", goodWhen: "up" }
   };
@@ -583,32 +583,30 @@
   function renderHistorySection(view, runtime) {
     if (!view) return "";
     const { series, visible, scope } = view;
-    const rows = allHistoryMetrics().filter((item) => runtime.historyMetrics.has(item.metric.key));
+    const metrics = allHistoryMetrics().filter((item) => runtime.historyMetrics.has(item.metric.key));
     const name = scopeLabel(scope);
-    const headerCells = visible.map((item) => `<th title="第 ${escapeHtml(item.batch.week_no || "—")} 周">${escapeHtml(batchDateText(item.batch))}</th>`).join("");
-    const metricCell = ({ metric, category, index }, first) => {
-      const body = visible.map((item) => {
+    const headCells = metrics.map(({ metric, category, index }) => `<th class="sd-hb-metric-th" title="${escapeHtml(metric.hint || metric.label)}"><i style="background:${METRIC_ACCENTS[index % METRIC_ACCENTS.length]}"></i>${escapeHtml(metric.label)}<small>${escapeHtml(category.title)}</small></th>`).join("");
+    const bodyRows = visible.map((item) => {
+      const cells = metrics.map(({ metric }) => {
         const value = toNum(item.snapshot[metric.key]);
         const prior = item.seriesIndex > 0 ? toNum(series[item.seriesIndex - 1]?.[metric.key]) : null;
         const delta = item.seriesIndex > 0 ? comparisonInfo(metric, value, prior) : null;
         const unit = metricUnit(metric);
         const deltaText = delta ? (item.seriesIndex === 0 ? "起始" : `${delta.arrow || ""} ${delta.text}`) : "—";
-        return `<td class="sd-hb-week" title="${escapeHtml(batchDateText(item.batch))} · 第 ${escapeHtml(item.batch.week_no || "—")} 周"><b>${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</b><em class="${delta ? delta.className : "sd-delta-flat"}">${deltaText}</em></td>`;
+        return `<td class="sd-hb-week"><b>${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</b><em class="${delta ? delta.className : "sd-delta-flat"}">${deltaText}</em></td>`;
       }).join("");
-      const nameCell = first ? `<td class="sd-hb-name" rowspan="${Math.max(1, rows.length)}"><b>${escapeHtml(name)}</b><small>${rows.length} 项指标</small></td>` : "";
-      return `${nameCell}<td class="sd-hb-metric" title="${escapeHtml(metric.hint || metric.label)}"><i style="background:${METRIC_ACCENTS[index % METRIC_ACCENTS.length]}"></i><b>${escapeHtml(metric.label)}</b><small>${escapeHtml(category.title)}</small></td>${body}`;
-    };
-    const bodyRows = rows.map((item, index) => `<tr>${metricCell(item, index === 0)}</tr>`).join("");
-    const empty = !rows.length
+      return `<tr><td class="sd-hb-date"><b>${escapeHtml(batchDateText(item.batch))}</b><small>第 ${escapeHtml(item.batch.week_no || "—")} 周</small></td><td class="sd-hb-name">${escapeHtml(name)}</td>${cells}</tr>`;
+    }).join("");
+    const empty = !metrics.length
       ? `<div class="sd-chart-empty">未选择任何指标，点击右上角“列配置”选择要对比的指标。</div>`
       : !visible.length
         ? `<div class="sd-chart-empty">所选日期范围内暂无批次数据。</div>`
-        : `<div class="sd-hb-scroll"><table class="sd-hb-table" aria-label="全指标历史对比"><thead><tr><th class="sd-hb-name-fix">人名</th><th class="sd-hb-metric-fix">指标</th>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
+        : `<div class="sd-hb-scroll"><table class="sd-hb-table" aria-label="全指标历史对比"><thead><tr><th class="sd-hb-date-fix">周期</th><th class="sd-hb-name-fix">人名</th>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`;
     return `
       <section class="sd-section" id="sd-section-history" data-sd-section="history">
         <div class="sd-section-card">
           <header class="sd-section-head">
-            <div class="sd-section-title"><span class="sd-section-no">05</span><div><h2>全指标历史对比</h2><p>逐指标纵向对比 · 批次横向对比，单元格显示数值与较上期变化</p></div></div>
+            <div class="sd-section-title"><span class="sd-section-no">05</span><div><h2>全指标历史对比</h2><p>每行一个周批次 · 每列一个指标，单元格显示数值与较上期变化</p></div></div>
             <div class="sd-section-tools"><button class="sd-small-btn" type="button" data-sd-open-history-columns>列配置</button><span class="pill pill-blue">${escapeHtml(rangeText(visible))}</span></div>
           </header>
           ${empty}
@@ -624,11 +622,11 @@
       return `<div class="sd-hb-modal-group"><b>${escapeHtml(category.title)}</b><div class="sd-column-options">${metrics.map((metric) => `<label class="sd-column-option ${draft.has(metric.key) ? "selected" : ""}"><input type="checkbox" value="${metric.key}" ${draft.has(metric.key) ? "checked" : ""}><span>${escapeHtml(metric.label)}</span></label>`).join("")}</div></div>`;
     }).join("");
     return `
-      <div class="sd-modal-head"><div><span class="eyebrow">HISTORY COLUMNS</span><h2>全指标历史对比 · 列配置</h2><p>选择要在历史对比表中展示的指标行。</p></div><button class="sd-icon-btn" type="button" data-sd-close-modal>×</button></div>
+      <div class="sd-modal-head"><div><span class="eyebrow">HISTORY COLUMNS</span><h2>全指标历史对比 · 列配置</h2><p>选择要在历史对比表中展示的指标列。</p></div><button class="sd-icon-btn" type="button" data-sd-close-modal>×</button></div>
       <div class="sd-modal-body">
         <div class="sd-preset-row"><span>快速选择</span><button type="button" class="sd-preset-btn" data-sd-history-preset="all">全部指标</button><button type="button" class="sd-preset-btn" data-sd-history-preset="sales">销售指标</button><button type="button" class="sd-preset-btn" data-sd-history-preset="ads">广告表现</button><button type="button" class="sd-preset-btn" data-sd-history-preset="efficiency">商品效率</button><button type="button" class="sd-preset-btn" data-sd-history-preset="inventory">库存周转</button></div>
         <div class="sd-hb-modal-groups">${groups}</div>
-        <p class="sd-modal-hint">已选择 <b>${draft.size}</b> 项。表格首列固定显示当前查看范围的人名，右侧按周批次横向滚动。</p>
+        <p class="sd-modal-hint">已选择 <b>${draft.size}</b> 项。表格前两列固定为周期与人名，右侧指标列横向滚动。</p>
       </div>
       <div class="sd-modal-foot"><button class="btn" type="button" data-sd-close-modal>取消</button><button class="btn btn-primary" type="button" data-sd-apply-history-columns>应用列配置</button></div>`;
   }
@@ -665,7 +663,7 @@
   function rangeWindow(dataset, runtime, selectedIndex) {
     const indexes = dataset.batches.map((batch, index) => dataset.availableIds.has(Number(batch.id)) ? index : -1).filter((index) => index >= 0);
     const upto = indexes.filter((index) => index <= selectedIndex);
-    return upto.slice(-Number(runtime.range || 4));
+    return runtime.range === "all" ? upto : upto.slice(-Number(runtime.range || 4));
   }
 
   function renderRangeControl(runtime) {
