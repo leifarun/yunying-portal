@@ -83,6 +83,7 @@
 
   const SERIES_COLORS = ["#2e6ce6", "#0d9fb8", "#7656d8"];
   const METRIC_ACCENTS = ["#2e6ce6", "#0b93ad", "#139a61", "#d47b0b", "#7656d8", "#dd4b57"];
+  const RANGE_OPTIONS = [["4", "近4周"], ["8", "近8周"], ["12", "近12周"], ["all", "全部"], ["custom", "自定义"]];
   const EXTRA_METRICS = {
     orderCount: { key: "orderCount", label: "订单量", unit: "单", format: "integer", goodWhen: "up" }
   };
@@ -108,6 +109,16 @@
 
   function metricUnit(metric) {
     return ["currency", "currency2", "percent", "multiple"].includes(metric.format) ? "" : metric.unit || "";
+  }
+
+  // Short axis labels: 12,500 -> 1.25万
+  function axisText(metric, value) {
+    if (!metric || value === null || value === undefined) return "";
+    if (metric.format === "percent") return `${(Number(value) * 100).toFixed(Math.abs(value) < 0.1 ? 1 : 0)}%`;
+    if (metric.format === "multiple") return `${fmt(value, 1)}×`;
+    const abs = Math.abs(Number(value));
+    if (abs >= 10000) return `${(Number(value) / 10000).toFixed(abs >= 100000 ? 0 : 1)}万`;
+    return fmt(value, abs < 10 && metric.format !== "integer" ? 1 : 0);
   }
 
   function batchWeekText(batch) {
@@ -334,19 +345,39 @@
     return { text, className, arrow };
   }
 
-  function renderMetricCard(category, metric, current, previous, accent) {
+  const toNum = (value) => value === null || value === undefined || !Number.isFinite(Number(value)) ? null : Number(value);
+
+  function renderSpark(metric, visible, selectedBatchId, color) {
+    const values = visible.map((item) => toNum(item.snapshot[metric.key]));
+    const valid = values.map((value, index) => [value, index]).filter(([value]) => value !== null);
+    if (valid.length < 2) return `<div class="sd-spark sd-spark-empty" aria-hidden="true">${valid.length ? "1 个批次" : "暂无趋势"}</div>`;
+    const width = 104, height = 40, pad = 4;
+    const nums = valid.map(([value]) => value);
+    const min = Math.min(...nums), max = Math.max(...nums);
+    const x = (index) => pad + index / Math.max(1, values.length - 1) * (width - pad * 2);
+    const y = (value) => max === min ? height / 2 : pad + (1 - (value - min) / (max - min)) * (height - pad * 2);
+    const points = valid.map(([value, index]) => `${x(index).toFixed(1)},${y(value).toFixed(1)}`);
+    const area = `M${x(valid[0][1]).toFixed(1)},${height} L${points.join(" L")} L${x(valid.at(-1)[1]).toFixed(1)},${height} Z`;
+    const markIndex = Math.max(0, visible.findIndex((item) => Number(item.batch.id) === Number(selectedBatchId)));
+    const markValue = values[markIndex] ?? valid.at(-1)[0];
+    return `<svg class="sd-spark" viewBox="0 0 ${width} ${height}" aria-hidden="true"><path d="${area}" fill="${color}" opacity=".09"></path><polyline points="${points.join(" ")}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline><circle cx="${x(values[markIndex] === null ? valid.at(-1)[1] : markIndex).toFixed(1)}" cy="${y(markValue).toFixed(1)}" r="2.6" fill="#fff" stroke="${color}" stroke-width="1.6"></circle></svg>`;
+  }
+
+  function renderMetricCard(category, metric, current, previous, accent, visible, selectedBatchId) {
     const value = current?.[metric.key] ?? null;
     const prior = previous?.[metric.key] ?? null;
     const comparison = comparisonInfo(metric, value, prior);
     const unit = metricUnit(metric);
     return `
       <article class="sd-metric" style="--metric-accent:${accent}" data-sd-metric="${metric.key}" data-sd-category="${category.id}" tabindex="0" aria-label="${escapeHtml(metric.label)}，查看历史趋势">
-        <div class="sd-metric-label-row">
-          <span class="sd-metric-label" title="${escapeHtml(metric.hint || metric.label)}">${escapeHtml(metric.label)}</span>
-          <span class="sd-metric-badge-wrap"><span class="sd-zoom-mark" aria-hidden="true">↗</span></span>
+        <div class="sd-metric-main">
+          <div class="sd-metric-label-row">
+            <span class="sd-metric-label" title="${escapeHtml(metric.hint || metric.label)}">${escapeHtml(metric.label)}</span>
+          </div>
+          <div class="sd-metric-value ${value === null ? "empty" : ""}">${escapeHtml(metricText(metric, value))}${unit && value !== null ? `<span class="unit">${escapeHtml(unit)}</span>` : ""}</div>
+          <div class="sd-metric-meta">${comparison.arrow ? `<span class="${comparison.className}">${comparison.arrow} ${escapeHtml(comparison.text)}</span>` : `<span class="${comparison.className}">${escapeHtml(comparison.text)}</span>`}<span>较上期</span></div>
         </div>
-        <div class="sd-metric-value ${value === null ? "empty" : ""}">${escapeHtml(metricText(metric, value))}${unit && value !== null ? `<span class="unit">${escapeHtml(unit)}</span>` : ""}</div>
-        <div class="sd-metric-meta">${comparison.arrow ? `<span class="${comparison.className}">${comparison.arrow} ${escapeHtml(comparison.text)}</span>` : `<span class="${comparison.className}">${escapeHtml(comparison.text)}</span>`}<span>较上期</span></div>
+        ${renderSpark(metric, visible, selectedBatchId, accent)}
       </article>`;
   }
 
@@ -358,87 +389,108 @@
       </span>`).join("");
   }
 
-  function renderChart(category, series, dataset, runtime) {
-    const visible = series.map((snapshot, index) => ({ snapshot, batch: dataset.batches[index] })).filter((item) => item.snapshot && item.batch);
-    if (!visible.length) return `<div class="sd-chart-empty">当前批次暂无趋势数据</div>`;
-    const metrics = (METRICS[category.id] || []).filter((metric) => (runtime.selections[category.id] || []).includes(metric.key));
+  function chartModel(id, metrics, visible, options = {}) {
     const datasets = metrics.map((metric, index) => ({
       metric,
-      color: SERIES_COLORS[index % SERIES_COLORS.length],
-      values: visible.map((item) => item.snapshot[metric.key] === null || item.snapshot[metric.key] === undefined ? null : Number(item.snapshot[metric.key]))
-    })).filter((item) => item.values.some((value) => value !== null && Number.isFinite(value)));
-    if (!datasets.length) return `<div class="sd-chart-empty">请选择至少一个可通过趋势图展示的指标</div>`;
-    const normalized = new Set(datasets.map((dataset) => dataset.metric.unit || dataset.metric.format)).size > 1;
-    const width = 920, height = 275;
-    const padding = { left: 68, right: 42, top: 18, bottom: 37 };
+      color: options.colors?.[index] || SERIES_COLORS[index % SERIES_COLORS.length],
+      values: visible.map((item) => toNum(item.snapshot[metric.key]))
+    })).filter((item) => item.values.some((value) => value !== null));
+    const normalized = new Set(datasets.map((item) => item.metric.unit || item.metric.format)).size > 1;
+    return { id, visible, datasets, normalized, height: options.height || 240, area: Boolean(options.area), labels: Boolean(options.labels), selectedBatchId: options.selectedBatchId, title: options.title || "" };
+  }
+
+  function chartShell(model, emptyText) {
+    if (!model.visible.length || !model.datasets.length) return `<div class="sd-chart-empty">${escapeHtml(emptyText)}</div>`;
+    return `<div class="sd-chart-wrap" data-sd-chart="${model.id}" style="height:${model.height}px"><div class="sd-chart-canvas"></div><div class="sd-chart-tooltip hidden" role="status"></div></div>`;
+  }
+
+  // Draws at the container's real pixel width so long ranges use the full row.
+  function drawChart(wrap, model) {
+    const canvas = wrap.querySelector(".sd-chart-canvas");
+    if (!canvas) return;
+    const width = Math.max(300, Math.round(wrap.clientWidth));
+    const height = model.height;
+    const padding = { left: 56, right: 22, top: model.labels ? 30 : 20, bottom: 30 };
     const plotWidth = width - padding.left - padding.right, plotHeight = height - padding.top - padding.bottom;
-    const xFor = (index) => padding.left + (visible.length === 1 ? plotWidth / 2 : index / (visible.length - 1) * plotWidth);
-    let domainMin = 0, domainMax = 100;
-    if (!normalized) {
-      const values = datasets.flatMap((dataset) => dataset.values).filter((value) => value !== null && Number.isFinite(value));
-      const min = Math.min(...values), max = Math.max(...values), pad = Math.max((max - min) * .12, Math.abs(max) * .04, 1);
-      domainMin = Math.max(0, min - pad); domainMax = max + pad;
+    const count = model.visible.length;
+    const xs = model.visible.map((_, index) => padding.left + (count === 1 ? plotWidth / 2 : index / (count - 1) * plotWidth));
+    const all = model.datasets.flatMap((item) => item.values).filter((value) => value !== null);
+    let domainMin = 0, domainMax = 1;
+    if (!model.normalized && all.length) {
+      const min = Math.min(...all), max = Math.max(...all), span = max - min;
+      const pad = span > 0 ? span * .14 : (Math.abs(max) * .12 || 1);
+      domainMin = min >= 0 ? Math.max(0, min - pad) : min - pad;
+      domainMax = max + pad;
     }
-    const yFor = (value, dataset) => {
-      if (value === null || !Number.isFinite(value)) return null;
-      let ratio;
-      if (normalized) {
-        const values = dataset.values.filter((item) => item !== null && Number.isFinite(item));
-        const min = Math.min(...values), max = Math.max(...values);
-        ratio = max === min ? .5 : (value - min) / (max - min);
-      } else ratio = (value - domainMin) / Math.max(domainMax - domainMin, 1);
-      return padding.top + (1 - ratio) * plotHeight;
+    const ratioFor = (value, item) => {
+      if (!model.normalized) return (value - domainMin) / Math.max(domainMax - domainMin, Number.EPSILON);
+      const values = item.values.filter((entry) => entry !== null);
+      const min = Math.min(...values), max = Math.max(...values);
+      return max === min ? .5 : .06 + (value - min) / (max - min) * .88;
     };
+    const ys = model.datasets.map((item) => item.values.map((value) => value === null ? null : padding.top + (1 - ratioFor(value, item)) * plotHeight));
     let grid = "";
     for (let tick = 0; tick < 5; tick += 1) {
       const ratio = tick / 4, y = padding.top + ratio * plotHeight;
-      const value = domainMax - ratio * (domainMax - domainMin);
-      const label = normalized ? `${Math.round(100 - ratio * 100)}` : metricText(metrics[0], value, true).replace("¥", "");
-      grid += `<line class="sd-grid-line" x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}"></line><text class="sd-axis-label" x="${padding.left - 11}" y="${(y + 3).toFixed(1)}" text-anchor="end">${escapeHtml(label)}</text>`;
+      const label = model.normalized ? "" : axisText(model.datasets[0].metric, domainMax - ratio * (domainMax - domainMin));
+      grid += `<line class="sd-grid-line" x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}"></line>${label ? `<text class="sd-axis-label" x="${padding.left - 9}" y="${(y + 3).toFixed(1)}" text-anchor="end">${escapeHtml(label)}</text>` : ""}`;
     }
-    const xLabels = visible.map((item, index) => `<text class="sd-axis-label" x="${xFor(index).toFixed(1)}" y="${height - 11}" text-anchor="middle">${batchDateText(item.batch)}</text>`).join("");
-    const lines = datasets.map((dataset) => {
-      let path = "", started = false;
-      const points = dataset.values.map((value, index) => {
-        const y = yFor(value, dataset);
+    const step = Math.max(1, Math.ceil(count * 64 / Math.max(plotWidth, 1)));
+    const xLabels = model.visible.map((item, index) => (count - 1 - index) % step === 0 ? `<text class="sd-axis-label${Number(item.batch.id) === Number(model.selectedBatchId) ? " current" : ""}" x="${xs[index].toFixed(1)}" y="${height - 9}" text-anchor="middle">${batchDateText(item.batch)}</text>` : "").join("");
+    const showLabels = model.labels && plotWidth / Math.max(count, 1) >= 54;
+    const series = model.datasets.map((item, k) => {
+      let path = "", started = false, first = null, last = null;
+      const points = item.values.map((value, index) => {
+        const y = ys[k][index];
         if (y === null) { started = false; return ""; }
-        path += `${started ? " L" : " M"}${xFor(index).toFixed(2)},${y.toFixed(2)}`; started = true;
-        return `<circle class="sd-point" cx="${xFor(index).toFixed(1)}" cy="${y.toFixed(1)}" r="${index === dataset.values.length - 1 ? 4 : 3}" fill="${dataset.color}"></circle>`;
+        path += `${started ? " L" : " M"}${xs[index].toFixed(1)},${y.toFixed(1)}`; started = true;
+        if (first === null) first = index; last = index;
+        const isSelected = Number(model.visible[index].batch.id) === Number(model.selectedBatchId);
+        const label = showLabels ? `<text class="sd-value-label" x="${xs[index].toFixed(1)}" y="${(y - 10).toFixed(1)}" text-anchor="middle">${escapeHtml(metricText(item.metric, value, true))}</text>` : "";
+        return `<circle class="sd-point" cx="${xs[index].toFixed(1)}" cy="${y.toFixed(1)}" r="${isSelected ? 4 : count > 24 ? 2 : 3}" fill="${isSelected ? item.color : "#fff"}" stroke="${item.color}"></circle>${label}`;
       }).join("");
-      return `<path class="sd-line" d="${path.trim()}" stroke="${dataset.color}"></path>${points}`;
+      const area = model.area && first !== null && last > first ? `<path d="${path.trim()} L${xs[last].toFixed(1)},${padding.top + plotHeight} L${xs[first].toFixed(1)},${padding.top + plotHeight} Z" fill="${item.color}" opacity=".08"></path>` : "";
+      return `${area}<path class="sd-line" d="${path.trim()}" stroke="${item.color}"></path>${points}`;
     }).join("");
-    const hitAreas = visible.map((_, index) => {
-      const previousX = index === 0 ? padding.left : (xFor(index - 1) + xFor(index)) / 2;
-      const nextX = index === visible.length - 1 ? width - padding.right : (xFor(index) + xFor(index + 1)) / 2;
-      return `<rect data-sd-point-index="${index}" x="${previousX.toFixed(1)}" y="${padding.top}" width="${Math.max(1, nextX - previousX).toFixed(1)}" height="${plotHeight}" fill="transparent"></rect>`;
-    }).join("");
-    runtime.chartModels[category.id] = { width, height, padding, plotWidth, plotHeight, visible, datasets, normalized, domainMin, domainMax };
-    return `
-      <div class="sd-chart-wrap" data-sd-chart="${category.id}">
-        <svg class="sd-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(category.title)}周批次趋势图">
-          <title>${escapeHtml(category.title)}周批次趋势图</title>
-          <desc>${normalized ? "不同单位的指标按自身区间归一化展示" : "按周批次汇总值绘制"}</desc>
-          ${grid}${lines}${xLabels}<text class="sd-axis-title" x="${padding.left}" y="12">${escapeHtml(normalized ? "相对指数" : metrics[0]?.unit || "")}</text>${hitAreas}
-        </svg>
-        <div class="sd-chart-tooltip hidden"></div>
-      </div>`;
+    const hover = `<line class="sd-hover-line" x1="0" x2="0" y1="${padding.top}" y2="${padding.top + plotHeight}" visibility="hidden"></line>${model.datasets.map((item, k) => `<circle class="sd-hover-dot" data-sd-hover-dot="${k}" r="5" fill="${item.color}" visibility="hidden"></circle>`).join("")}`;
+    canvas.innerHTML = `<svg class="sd-chart-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(model.title)}"><title>${escapeHtml(model.title)}</title>${grid}${series}${xLabels}${model.normalized ? `<text class="sd-axis-title" x="${padding.left}" y="12">多指标按各自区间缩放</text>` : ""}${hover}</svg>`;
+    model.geom = { xs, ys, padding, width, height };
   }
 
-  function renderSection(category, series, current, previous, dataset, runtime) {
+  function drawCharts(runtime, root = runtime.container) {
+    root.querySelectorAll("[data-sd-chart]").forEach((wrap) => {
+      const model = runtime.chartModels[wrap.dataset.sdChart];
+      if (model) drawChart(wrap, model);
+    });
+  }
+
+  function renderChart(category, visible, runtime, selectedBatchId) {
+    const metrics = (METRICS[category.id] || []).filter((metric) => (runtime.selections[category.id] || []).includes(metric.key));
+    const model = chartModel(category.id, metrics, visible, { height: 236, selectedBatchId, title: `${category.title}周批次趋势图` });
+    runtime.chartModels[category.id] = model;
+    return chartShell(model, visible.length ? "所选指标在该范围内暂无数据" : "所选日期范围内暂无批次数据");
+  }
+
+  function rangeText(visible) {
+    if (!visible.length) return "无批次";
+    return `${batchDateText(visible[0].batch)} 至 ${batchDateText(visible.at(-1).batch)} · ${visible.length} 个批次`;
+  }
+
+  function renderSection(category, visible, current, previous, dataset, runtime) {
     const metrics = METRICS[category.id] || [];
     const selected = metrics.filter((metric) => (runtime.selections[category.id] || []).includes(metric.key));
+    const selectedBatchId = dataset.selectedBatch?.id;
     return `
       <section class="sd-section" id="sd-section-${category.id}" data-sd-section="${category.id}">
         <div class="sd-section-card tone-${category.tone}">
           <header class="sd-section-head">
             <div class="sd-section-title"><span class="sd-section-no">${category.number}</span><div><h2>${escapeHtml(category.title)}</h2><p>${escapeHtml(category.desc)} · ${metrics.length} 项指标</p></div></div>
-            <div class="sd-section-tools"><span class="pill pill-blue">${batchDateText(dataset.selectedBatch)}</span><button class="btn btn-sm" type="button" data-sd-open-metrics="${category.id}">配置趋势指标</button></div>
+            <div class="sd-section-tools"><span class="pill pill-blue">${batchDateText(dataset.selectedBatch)}</span></div>
           </header>
-          <div class="sd-metric-grid">${metrics.map((metric, index) => renderMetricCard(category, metric, current, previous, METRIC_ACCENTS[index % METRIC_ACCENTS.length])).join("")}</div>
+          <div class="sd-metric-grid">${metrics.map((metric, index) => renderMetricCard(category, metric, current, previous, METRIC_ACCENTS[index % METRIC_ACCENTS.length], visible, selectedBatchId)).join("")}</div>
           <div class="sd-chart-block">
-            <div class="sd-chart-head"><div class="sd-chart-title"><h3>${escapeHtml(category.title)}趋势</h3><p>${dataset.batches.filter((_, index) => series[index]).map((batch) => batchDateText(batch)).join(" · ")}</p></div><button class="sd-small-btn" type="button" data-sd-open-metrics="${category.id}">＋ 选择指标</button></div>
-            <div class="sd-chart-legend">${renderLegend(category, selected, current, runtime)}</div>
-            ${renderChart(category, series, dataset, runtime)}
+            <div class="sd-chart-head"><div class="sd-chart-title"><h3>${escapeHtml(category.title)}趋势</h3><p>${escapeHtml(rangeText(visible))}</p></div><div class="sd-chart-legend">${renderLegend(category, selected, current, runtime)}<button class="sd-small-btn" type="button" data-sd-open-metrics="${category.id}">＋ 选择指标</button></div></div>
+            ${renderChart(category, visible, runtime, selectedBatchId)}
           </div>
         </div>
       </section>`;
@@ -473,7 +525,7 @@
     });
   }
 
-  function renderComparison(dataset, batch, runtime) {
+  function renderComparison(dataset, batch, runtime, total) {
     const rows = sortedComparisonRows(dataset, batch, runtime);
     if (!rows.length) return "";
     const columns = visibleTeamColumns(runtime);
@@ -483,7 +535,7 @@
         <div class="sd-comparison-head"><div><h2>团队指标对比</h2><p>${batchDateText(batch)} · 点击负责人行可切换到个人数据</p></div><div class="sd-head-actions"><button class="sd-small-btn" type="button" data-sd-open-team-columns>列配置 / 模板</button><span class="pill pill-blue">${rows.length} 人</span><span class="pill pill-gray">当前批次汇总</span></div></div>
         <div class="sd-comparison-scroll"><table class="sd-comparison-table" aria-label="团队指标对比"><thead><tr><th>负责人</th>${columns.map((column) => `<th><button type="button" class="sd-sort-btn" data-sd-sort-team="${column.key}" title="点击按${escapeHtml(column.label)}排序">${escapeHtml(column.label)}${sortMark(column.key)}</button></th>`).join("")}</tr></thead><tbody>
           ${rows.map(({ owner, snapshot }) => `<tr data-sd-person="${escapeHtml(owner)}" title="查看 ${escapeHtml(owner)} 的数据"><td><b>${escapeHtml(owner)}</b><small>成员</small></td>${columns.map((column) => { const metric = metricFor(column); const unit = metricUnit(metric); const value = snapshot[column.key]; return `<td title="${escapeHtml(column.label)}">${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</td>`; }).join("")}</tr>`).join("")}
-        </tbody></table></div><div class="sd-comparison-foot"><span>共 ${rows.length} 人</span><span>列配置保存在当前浏览器，可保存为自定义模板</span></div>
+        </tbody>${total ? `<tfoot><tr><td><b>团队合计</b></td>${columns.map((column) => { const metric = metricFor(column); const unit = metricUnit(metric); const value = total[column.key]; return `<td>${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</td>`; }).join("")}</tr></tfoot>` : ""}</table></div><div class="sd-comparison-foot"><span>共 ${rows.length} 人</span><span>列配置保存在当前浏览器</span></div>
       </section>`;
   }
 
@@ -520,16 +572,37 @@
     if (modal && runtime.modalMode === "team-columns") modal.innerHTML = renderTeamColumnModal(runtime);
   }
 
-  function renderSnapshot(current, previous, scope, batch, isCurrent) {
+  function renderSnapshot(current, previous, scope, batch, isCurrent, visible) {
     const netDelta = current && previous?.netSales ? (current.netSales - previous.netSales) / previous.netSales : null;
     return `
       <section class="sd-snapshot-strip">
-        <div class="sd-snapshot-lead"><b>${escapeHtml(scopeLabel(scope))} · ${batchDateText(batch)}</b><p>每人 × 每批 1 条汇总快照。当前周按最新产品实时汇总，历史周使用已保存快照。</p></div>
+        <div class="sd-snapshot-lead"><span class="pill ${isCurrent ? "pill-green" : "pill-gray"}">${isCurrent ? "实时数据" : "历史快照"}</span><b>${escapeHtml(scopeLabel(scope))} · ${batchDateText(batch)}</b><p>趋势范围：${escapeHtml(rangeText(visible))}</p></div>
         <div class="sd-snapshot-stat"><span>Listing 款数</span><b>${fmt(current?.listingCount)}</b><small>本周汇总口径</small></div>
         <div class="sd-snapshot-stat"><span>销量</span><b>${fmt(current?.sales)}</b><small>${batchDateText(batch)}</small></div>
         <div class="sd-snapshot-stat"><span>净销售额</span><b>${fmt(current?.netSales)}</b><small>${netDelta === null ? "首次记录" : `${netDelta >= 0 ? "↑" : "↓"} ${Math.abs(netDelta * 100).toFixed(1)}%`}</small></div>
         <div class="sd-snapshot-stat"><span>广告花费</span><b>${fmt(current?.adSpend)}</b><small>ACOS ${current?.acos === null || current?.acos === undefined ? "—" : `${(current.acos * 100).toFixed(2)}%`}</small></div>
       </section>`;
+  }
+
+  // Batch indexes shown in trend charts. Presets end at the selected batch.
+  function rangeWindow(dataset, runtime, selectedIndex) {
+    const indexes = dataset.batches.map((batch, index) => dataset.availableIds.has(Number(batch.id)) ? index : -1).filter((index) => index >= 0);
+    if (runtime.range === "custom") {
+      const fromIndex = dataset.batches.findIndex((batch) => Number(batch.id) === Number(runtime.rangeFrom));
+      const toIndex = dataset.batches.findIndex((batch) => Number(batch.id) === Number(runtime.rangeTo));
+      let from = fromIndex >= 0 ? fromIndex : indexes[0] ?? 0;
+      let to = toIndex >= 0 ? toIndex : indexes.at(-1) ?? 0;
+      if (from > to) [from, to] = [to, from];
+      return indexes.filter((index) => index >= from && index <= to);
+    }
+    const upto = indexes.filter((index) => index <= selectedIndex);
+    return runtime.range === "all" ? upto : upto.slice(-Number(runtime.range || 12));
+  }
+
+  function renderRangeControl(available, runtime, visible) {
+    const options = (selectedId) => available.map((item) => `<option value="${item.id}" ${Number(item.id) === Number(selectedId) ? "selected" : ""}>${batchDateText(item)}</option>`).join("");
+    const custom = runtime.range === "custom" ? `<span class="sd-range-custom"><select data-sd-range-from aria-label="开始批次">${options(visible[0]?.batch.id)}</select><span>至</span><select data-sd-range-to aria-label="结束批次">${options(visible.at(-1)?.batch.id)}</select></span>` : "";
+    return `<div class="sd-range"><span class="sd-range-label">趋势范围</span><div class="sd-segmented" role="group" aria-label="趋势日期范围">${RANGE_OPTIONS.map(([value, label]) => `<button type="button" class="${runtime.range === value ? "active" : ""}" data-sd-range="${value}" aria-pressed="${runtime.range === value}">${label}</button>`).join("")}</div>${custom}</div>`;
   }
 
   function renderPage(rt) {
@@ -543,16 +616,18 @@
     const selectedIndex = Math.max(0, dataset.batches.findIndex((item) => Number(item.id) === Number(batch.id)));
     const current = series[selectedIndex] || null;
     const previous = selectedIndex > 0 ? series[selectedIndex - 1] : null;
-    rt.lastView = { dataset, series, selectedIndex, batch, scope };
+    const visible = rangeWindow(dataset, rt, selectedIndex).map((index) => ({ snapshot: series[index], batch: dataset.batches[index] })).filter((item) => item.snapshot);
+    rt.lastView = { dataset, series, selectedIndex, batch, scope, visible, current, previous };
     const isCurrent = Number(batch.id) === Number(dataset.currentBatchId);
-    const weekOptions = dataset.batches.filter((item) => dataset.availableIds.has(Number(item.id))).map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>${batchDateText(item)}</option>`).join("");
+    const available = dataset.batches.filter((item) => dataset.availableIds.has(Number(item.id)));
+    const weekOptions = [...available].reverse().map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>${batchDateText(item)}${Number(item.id) === Number(dataset.currentBatchId) ? "（当前）" : ""}</option>`).join("");
     const ownerOptions = [`<option value="all" ${scope === "all" ? "selected" : ""}>所有人</option>`, ...dataset.owners.map((owner) => `<option value="${escapeHtml(owner)}" ${scope === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`)].join("");
     return `
-      <div class="sd-page-head"><div class="sd-page-title"><span class="sd-eyebrow">WEEKLY PERFORMANCE SNAPSHOT</span><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "所有成员合计" : `当前查看 ${escapeHtml(scope)}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label><span class="pill ${isCurrent ? "pill-green" : "pill-gray"}">${isCurrent ? "实时数据" : "历史快照"}</span><span class="pill pill-blue">汇总粒度：人 × 周</span></div></div>
-      ${renderSnapshot(current, previous, scope, batch, isCurrent)}
-      ${scope === "all" ? renderComparison(dataset, batch, rt) : ""}
-      <div class="sd-category-nav">${CATEGORIES.map((category, index) => `<button class="sd-category-link ${index === 0 ? "active" : ""}" type="button" data-sd-scroll="${category.id}"><span>${category.number}</span>${escapeHtml(category.short)}</button>`).join("")}<span class="sd-nav-spacer"></span><button class="sd-small-btn" type="button" data-sd-open-metrics="sales">⚙ 自定义图表</button></div>
-      <div>${CATEGORIES.map((category) => renderSection(category, series, current, previous, dataset, rt)).join("")}</div>
+      <div class="sd-page-head"><div class="sd-page-title"><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "所有成员合计" : `当前查看 ${escapeHtml(scope)}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label>${scope !== "all" ? `<button class="sd-small-btn" type="button" data-sd-scope-all>返回所有人</button>` : ""}</div></div>
+      ${renderSnapshot(current, previous, scope, batch, isCurrent, visible)}
+      ${scope === "all" ? renderComparison(dataset, batch, rt, current) : ""}
+      <div class="sd-category-nav">${CATEGORIES.map((category, index) => `<button class="sd-category-link ${index === 0 ? "active" : ""}" type="button" data-sd-scroll="${category.id}"><span>${category.number}</span>${escapeHtml(category.short)}</button>`).join("")}<span class="sd-nav-spacer"></span>${renderRangeControl(available, rt, visible)}</div>
+      <div>${CATEGORIES.map((category) => renderSection(category, visible, current, previous, dataset, rt)).join("")}</div>
       <div class="sd-modal-mask hidden" data-sd-modal-mask></div>
       <section class="sd-modal hidden" data-sd-modal role="dialog" aria-modal="true"></section>
       <div class="sd-zoom-mask hidden" data-sd-zoom-mask></div>
@@ -569,26 +644,10 @@
       <div class="sd-modal-foot"><button class="btn" type="button" data-sd-close-modal>取消</button><button class="btn btn-primary" type="button" data-sd-apply-metrics>应用指标</button></div>`;
   }
 
-  function renderZoomChart(metric, visible) {
-    const width = 820, height = 310;
-    const padding = { left: 66, right: 30, top: 30, bottom: 40 };
-    const plotWidth = width - padding.left - padding.right, plotHeight = height - padding.top - padding.bottom;
-    const values = visible.map((item) => item.snapshot[metric.key] === null || item.snapshot[metric.key] === undefined ? null : Number(item.snapshot[metric.key]));
-    const available = values.filter((value) => value !== null);
-    if (!available.length) return `<div class="sd-chart-empty">该指标暂无可展示数据</div>`;
-    const min = Math.min(...available), max = Math.max(...available), pad = Math.max((max - min) * .13, Math.abs(max) * .045, 1);
-    const domainMin = Math.max(0, min - pad), domainMax = max + pad;
-    const xFor = (index) => padding.left + (visible.length === 1 ? plotWidth / 2 : index / (visible.length - 1) * plotWidth);
-    const yFor = (value) => padding.top + (1 - (value - domainMin) / Math.max(domainMax - domainMin, 1)) * plotHeight;
-    let grid = "";
-    for (let tick = 0; tick < 5; tick += 1) { const ratio = tick / 4, y = padding.top + ratio * plotHeight, value = domainMax - ratio * (domainMax - domainMin); grid += `<line class="sd-grid-line" x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}"></line><text class="sd-axis-label" x="${padding.left - 10}" y="${(y + 3).toFixed(1)}" text-anchor="end">${escapeHtml(metricText(metric, value, true).replace("¥", ""))}</text>`; }
-    let path = "", started = false;
-    values.forEach((value, index) => { if (value === null) { started = false; return; } path += `${started ? " L" : " M"}${xFor(index).toFixed(2)},${yFor(value).toFixed(2)}`; started = true; });
-    const indexes = values.map((value, index) => value === null ? null : index).filter((index) => index !== null);
-    const area = indexes.length > 1 ? `${path} L${xFor(indexes.at(-1)).toFixed(2)},${padding.top + plotHeight} L${xFor(indexes[0]).toFixed(2)},${padding.top + plotHeight} Z` : "";
-    const points = values.map((value, index) => value === null ? "" : `<circle class="${index === visible.length - 1 ? "sd-zoom-current" : "sd-zoom-point"}" cx="${xFor(index).toFixed(1)}" cy="${yFor(value).toFixed(1)}" r="${index === visible.length - 1 ? 4.5 : 3.5}"></circle><text class="sd-zoom-label" x="${xFor(index).toFixed(1)}" y="${(yFor(value) - 10).toFixed(1)}" text-anchor="middle">${escapeHtml(metricText(metric, value, true))}</text>`).join("");
-    const labels = visible.map((item, index) => `<text class="sd-axis-label" x="${xFor(index).toFixed(1)}" y="${height - 13}" text-anchor="middle">${batchDateText(item.batch)}</text>`).join("");
-    return `<div class="sd-zoom-chart"><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(metric.label)}历史趋势"><title>${escapeHtml(metric.label)}历史趋势</title><defs><linearGradient id="sdZoomArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e6ce6" stop-opacity=".24"></stop><stop offset="100%" stop-color="#2e6ce6" stop-opacity=".01"></stop></linearGradient></defs>${grid}${area ? `<path class="sd-zoom-area" d="${area}" fill="url(#sdZoomArea)"></path>` : ""}<path class="sd-zoom-line" d="${path.trim()}"></path>${points}${labels}</svg></div>`;
+  function renderZoomChart(metric, visible, runtime, selectedBatchId) {
+    const model = chartModel("zoom", [metric], visible, { height: 300, area: true, labels: true, selectedBatchId, title: `${metric.label}历史趋势` });
+    runtime.chartModels.zoom = model;
+    return `<div class="sd-zoom-chart">${chartShell(model, "该指标在所选范围内暂无数据")}</div>`;
   }
 
   function renderZoomPanel(categoryId, metricKey, runtime) {
@@ -596,13 +655,15 @@
     const metric = (METRICS[categoryId] || []).find((item) => item.key === metricKey);
     const view = runtime.lastView;
     if (!category || !metric || !view) return "";
-    const visible = view.series.map((snapshot, index) => ({ snapshot, batch: view.dataset.batches[index] })).filter((item) => item.snapshot && item.batch).slice(-12);
-    const current = visible.at(-1)?.snapshot || null;
-    const previous = visible.at(-2)?.snapshot || null;
-    const values = visible.map((item) => item.snapshot[metric.key]).filter((value) => value !== null && value !== undefined);
+    const visible = view.visible;
+    const current = view.current, previous = view.previous;
+    const values = visible.map((item) => toNum(item.snapshot[metric.key])).filter((value) => value !== null);
     const high = values.length ? Math.max(...values) : null, low = values.length ? Math.min(...values) : null;
     const comparison = comparisonInfo(metric, current?.[metric.key], previous?.[metric.key]);
-    return `<div class="sd-zoom-head"><div><span class="eyebrow">QUICK TREND · ${escapeHtml(category.title)}</span><h2>${escapeHtml(metric.label)} · 历史趋势</h2><p>${escapeHtml(scopeLabel(view.scope))} · ${batchDateText(visible[0]?.batch)}–${batchDateText(visible.at(-1)?.batch)}</p></div><div class="sd-head-actions"><span class="pill pill-blue">当前 ${escapeHtml(metricText(metric, current?.[metric.key], true))}</span><button class="sd-icon-btn" type="button" data-sd-close-zoom>×</button></div></div><div class="sd-zoom-body"><div class="sd-zoom-summary"><div><span>当前值</span><b>${escapeHtml(metricText(metric, current?.[metric.key]))}${metricUnit(metric) ? ` ${escapeHtml(metricUnit(metric))}` : ""}</b><small>${batchDateText(visible.at(-1)?.batch)}</small></div><div><span>较前一周</span><b class="${comparison.className}">${escapeHtml(comparison.text)}</b><small>${metric.compareMode === "pp" ? "百分点变化" : "环比变化"}</small></div><div><span>区间最高</span><b>${escapeHtml(metricText(metric, high))}</b><small>当前已加载批次</small></div><div><span>区间最低</span><b>${escapeHtml(metricText(metric, low))}</b><small>当前已加载批次</small></div></div>${renderZoomChart(metric, visible)}<div class="sd-history"><div class="sd-history-title"><h3>完整历史数据</h3><span>每个批次一条汇总快照</span></div><div class="sd-history-scroll"><div class="sd-history-grid">${visible.map((item, index) => { const value = item.snapshot[metric.key]; const prior = index > 0 ? visible[index - 1].snapshot[metric.key] : null; const delta = comparisonInfo(metric, value, prior); return `<div class="sd-history-cell ${index === visible.length - 1 ? "current" : ""}"><span>${batchDateText(item.batch)}</span><b>${escapeHtml(metricText(metric, value, true))}</b><small>${index === 0 ? "起始周" : escapeHtml(delta.text)}</small></div>`; }).join("")}</div></div></div></div>`;
+    const highItem = visible.find((item) => toNum(item.snapshot[metric.key]) === high);
+    const lowItem = visible.find((item) => toNum(item.snapshot[metric.key]) === low);
+    const selectedId = Number(view.batch?.id);
+    return `<div class="sd-zoom-head"><div><span class="eyebrow">${escapeHtml(category.title)}</span><h2>${escapeHtml(metric.label)} · 历史趋势</h2><p>${escapeHtml(scopeLabel(view.scope))} · ${escapeHtml(rangeText(visible))}${metric.hint ? ` · ${escapeHtml(metric.hint)}` : ""}</p></div><div class="sd-head-actions"><button class="sd-icon-btn" type="button" data-sd-close-zoom aria-label="关闭">×</button></div></div><div class="sd-zoom-body"><div class="sd-zoom-summary"><div><span>当前值</span><b>${escapeHtml(metricText(metric, current?.[metric.key]))}${metricUnit(metric) ? ` ${escapeHtml(metricUnit(metric))}` : ""}</b><small>${batchDateText(view.batch)}</small></div><div><span>较上期</span><b class="${comparison.className}">${comparison.arrow ? `${comparison.arrow} ` : ""}${escapeHtml(comparison.text)}</b><small>${metric.compareMode === "pp" ? "百分点变化" : "环比变化"}</small></div><div><span>区间最高</span><b>${escapeHtml(metricText(metric, high))}</b><small>${batchDateText(highItem?.batch)}</small></div><div><span>区间最低</span><b>${escapeHtml(metricText(metric, low))}</b><small>${batchDateText(lowItem?.batch)}</small></div></div>${renderZoomChart(metric, visible, runtime, selectedId)}<div class="sd-history"><div class="sd-history-title"><h3>批次明细</h3><span>${visible.length} 个批次</span></div><div class="sd-history-scroll"><div class="sd-history-grid">${visible.map((item, index) => { const value = item.snapshot[metric.key]; const prior = index > 0 ? visible[index - 1].snapshot[metric.key] : null; const delta = comparisonInfo(metric, value, prior); return `<div class="sd-history-cell ${Number(item.batch.id) === selectedId ? "current" : ""}"><span>${batchDateText(item.batch)}</span><b>${escapeHtml(metricText(metric, value, true))}</b><small class="${index === 0 ? "" : delta.className}">${index === 0 ? "起始批次" : `${delta.arrow} ${escapeHtml(delta.text)}`}</small></div>`; }).join("")}</div></div></div></div>`;
   }
   function defaultSelections() {
     return Object.fromEntries(CATEGORIES.map((category) => [category.id, [...category.defaults]]));
@@ -643,12 +704,14 @@
     panel.innerHTML = renderZoomPanel(categoryId, metricKey, runtime);
     mask?.classList.remove("hidden");
     panel.classList.remove("hidden");
+    drawCharts(runtime, panel);
   }
 
   function render(runtime, keepScroll = false) {
     const scrollY = window.scrollY;
     runtime.chartModels = {};
     runtime.container.innerHTML = renderPage(runtime);
+    drawCharts(runtime);
     runtime.observer?.disconnect();
     const sections = [...runtime.container.querySelectorAll("[data-sd-section]")];
     const links = [...runtime.container.querySelectorAll("[data-sd-scroll]")];
@@ -753,6 +816,19 @@
     }
     const personRow = event.target.closest("[data-sd-person]");
     if (personRow) { runtime.scope = personRow.dataset.sdPerson; render(runtime, true); return; }
+    if (event.target.closest("[data-sd-scope-all]")) { runtime.scope = "all"; render(runtime, true); return; }
+    const rangeButton = event.target.closest("[data-sd-range]");
+    if (rangeButton) {
+      const value = rangeButton.dataset.sdRange;
+      if (value === "custom" && runtime.range !== "custom") {
+        const visible = runtime.lastView?.visible || [];
+        runtime.rangeFrom = visible[0]?.batch.id || null;
+        runtime.rangeTo = visible.at(-1)?.batch.id || null;
+      }
+      runtime.range = value;
+      render(runtime, true);
+      return;
+    }
     const metricCard = event.target.closest("[data-sd-metric]");
     if (metricCard) { openZoom(metricCard.dataset.sdCategory, metricCard.dataset.sdMetric, runtime); return; }
     if (event.target.closest("[data-sd-close-zoom]")) { closeZoom(runtime); return; }
@@ -762,6 +838,8 @@
   function handleChange(event, runtime) {
     if (event.target.matches("[data-sd-week]")) { runtime.batchId = Number(event.target.value); render(runtime, true); return; }
     if (event.target.matches("[data-sd-scope]")) { runtime.scope = event.target.value; render(runtime, true); return; }
+    if (event.target.matches("[data-sd-range-from]")) { runtime.rangeFrom = Number(event.target.value); render(runtime, true); return; }
+    if (event.target.matches("[data-sd-range-to]")) { runtime.rangeTo = Number(event.target.value); render(runtime, true); return; }
     if (event.target.closest("[data-sd-modal]") && event.target.matches("input[type=checkbox]")) {
       const value = event.target.value;
       if (runtime.modalMode === "team-columns") {
@@ -783,28 +861,51 @@
     if (card && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); openZoom(card.dataset.sdCategory, card.dataset.sdMetric, runtime); }
   }
 
+  function hideHover(wrap) {
+    if (!wrap) return;
+    wrap.querySelector(".sd-chart-tooltip")?.classList.add("hidden");
+    wrap.querySelectorAll(".sd-hover-line, .sd-hover-dot").forEach((node) => node.setAttribute("visibility", "hidden"));
+  }
+
   function handlePointerMove(event, runtime) {
     const wrap = event.target.closest?.("[data-sd-chart]");
+    if (runtime.hoverWrap && runtime.hoverWrap !== wrap) { hideHover(runtime.hoverWrap); runtime.hoverWrap = null; }
     if (!wrap) return;
     const model = runtime.chartModels[wrap.dataset.sdChart];
     const tooltip = wrap.querySelector(".sd-chart-tooltip");
-    const svg = wrap.querySelector("svg");
-    if (!model || !tooltip || !svg || !model.visible.length) return;
-    const rect = svg.getBoundingClientRect();
-    const chartX = (event.clientX - rect.left) / rect.width * model.width;
-    const ratio = clamp((chartX - model.padding.left) / model.plotWidth, 0, 1);
-    const index = Math.round(ratio * Math.max(0, model.visible.length - 1));
-    const x = model.padding.left + (model.visible.length === 1 ? model.plotWidth / 2 : index / (model.visible.length - 1) * model.plotWidth);
-    const rows = model.datasets.map((dataset) => `<div class="sd-tip-row"><span>${escapeHtml(dataset.metric.label)}</span><strong>${escapeHtml(metricText(dataset.metric, dataset.values[index], true))}</strong></div>`).join("");
-    tooltip.innerHTML = `<b>${batchDateText(model.visible[index].batch)}</b>${rows}`;
-    tooltip.style.left = `${x / model.width * 100}%`;
-    tooltip.style.top = "72px";
+    if (!model?.geom || !tooltip || !model.visible.length) return;
+    runtime.hoverWrap = wrap;
+    const rect = wrap.getBoundingClientRect();
+    const pointerX = event.clientX - rect.left;
+    const { xs, ys, padding } = model.geom;
+    let index = 0;
+    xs.forEach((x, i) => { if (Math.abs(x - pointerX) < Math.abs(xs[index] - pointerX)) index = i; });
+    const line = wrap.querySelector(".sd-hover-line");
+    line?.setAttribute("x1", xs[index].toFixed(1));
+    line?.setAttribute("x2", xs[index].toFixed(1));
+    line?.setAttribute("visibility", "visible");
+    wrap.querySelectorAll("[data-sd-hover-dot]").forEach((dot) => {
+      const y = ys[Number(dot.dataset.sdHoverDot)]?.[index];
+      if (y === null || y === undefined) { dot.setAttribute("visibility", "hidden"); return; }
+      dot.setAttribute("cx", xs[index].toFixed(1));
+      dot.setAttribute("cy", y.toFixed(1));
+      dot.setAttribute("visibility", "visible");
+    });
+    const batch = model.visible[index].batch;
+    const rows = model.datasets.map((item) => {
+      const value = item.values[index];
+      const prior = index > 0 ? item.values[index - 1] : null;
+      const delta = index > 0 ? comparisonInfo(item.metric, value, prior) : null;
+      const unit = metricUnit(item.metric);
+      return `<div class="sd-tip-row"><span><i style="background:${item.color}"></i>${escapeHtml(item.metric.label)}</span><strong>${escapeHtml(metricText(item.metric, value))}${unit && value !== null ? ` ${escapeHtml(unit)}` : ""}</strong>${delta ? `<em class="${delta.className}">${delta.arrow} ${escapeHtml(delta.text)}</em>` : "<em></em>"}</div>`;
+    }).join("");
+    tooltip.innerHTML = `<b>${batchDateText(batch)}<span>第 ${escapeHtml(batch.week_no || "—")} 周</span></b>${rows}`;
     tooltip.classList.remove("hidden");
-  }
-
-  function handlePointerLeave(event) {
-    const wrap = event.target.closest?.("[data-sd-chart]");
-    wrap?.querySelector(".sd-chart-tooltip")?.classList.add("hidden");
+    const tipWidth = tooltip.offsetWidth;
+    let left = xs[index] + 14;
+    if (left + tipWidth > rect.width - 4) left = xs[index] - 14 - tipWidth;
+    tooltip.style.left = `${clamp(left, 4, Math.max(4, rect.width - tipWidth - 4))}px`;
+    tooltip.style.top = `${padding.top}px`;
   }
 
   function mount(container, data) {
@@ -814,6 +915,9 @@
       data,
       scope: "all",
       batchId: Number(data.currentBatchId) || null,
+      range: "12",
+      rangeFrom: null,
+      rangeTo: null,
       selections: defaultSelections(),
       editCategory: null,
       editSelection: [],
@@ -838,7 +942,17 @@
     container.onchange = (event) => handleChange(event, runtime);
     container.onkeydown = (event) => handleKeydown(event, runtime);
     container.onpointermove = (event) => handlePointerMove(event, runtime);
-    container.onpointerleave = (event) => handlePointerLeave(event);
+    container.onpointerleave = () => { hideHover(runtime.hoverWrap); runtime.hoverWrap = null; };
+    if (!runtime.resizeObserver && window.ResizeObserver) {
+      runtime.lastWidth = container.clientWidth;
+      runtime.resizeObserver = new ResizeObserver(() => {
+        if (container.clientWidth === runtime.lastWidth) return;
+        runtime.lastWidth = container.clientWidth;
+        cancelAnimationFrame(runtime.resizeFrame);
+        runtime.resizeFrame = requestAnimationFrame(() => drawCharts(runtime));
+      });
+      runtime.resizeObserver.observe(container);
+    }
     render(runtime);
   }
 
