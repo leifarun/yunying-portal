@@ -166,7 +166,6 @@
 .sd-sort-btn { width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: right; cursor: pointer; white-space: nowrap; }
 .sd-sort-btn:hover { color: var(--blue); }
 .sd-metric {
-  border-top: 3px solid var(--metric-accent, var(--blue));
   background: linear-gradient(180deg, color-mix(in srgb, var(--metric-accent, var(--blue)) 7%, #fff) 0%, #fff 48%);
 }
 .sd-metric:hover {
