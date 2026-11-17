@@ -2,9 +2,9 @@
 
 最后更新：2026-11-17
 
-当前线上版本：`v=44`
+当前线上版本：`v=45`
 状态：已发布，GitHub Pages 构建成功
-最近发布：总数据看板新增趋势日期筛选、指标卡缩略趋势图、全宽折线图和悬停批次数值
+最近发布：左侧“账号与权限”上方的“导入中心”导航文案改为“导入页面”
 数据库迁移：`001`–`009`、`011`、`012` 已应用并验证；`010` 待应用
 
 ## 一、如果这是新的 Codex 对话
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`v=44`
+- 当前静态资源版本：`v=45`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key
@@ -126,7 +126,7 @@
 - 低评分优化
 
 - 任务分配表和完成进度表共用同一套列宽 `colgroup`，表头、输入框、进度格与合计列逐列对齐。
-- 当前静态资源缓存版本为 `v=44`，部署后会加载纯文字折叠导航、中低潜力独立看板、周批次看板趋势增强（日期筛选、缩略趋势图、全宽折线图、悬停数值）、34 列总 Listing 模板和包含中低潜力的 7 列处理记录模板。
+- 当前静态资源缓存版本为 `v=45`，部署后会加载文字版“导入页面”导航、纯文字折叠导航、中低潜力独立看板、周批次看板趋势增强（日期筛选、缩略趋势图、全宽折线图、悬停数值）、34 列总 Listing 模板和包含中低潜力的 7 列处理记录模板。
 
 计数规则：
 

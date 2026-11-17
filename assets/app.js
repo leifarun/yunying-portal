@@ -184,7 +184,7 @@
       { view: "board", board: "score", label: "低评分优化" }
     ] },
     { title: "工作与追踪", items: [{ view: "weekly", label: "每周处理进度", icon: "◴" }, { view: "logs", label: "处理记录", icon: "≡" }] },
-    { title: "管理", items: [{ view: "thresholds", label: "阈值与公式", icon: "ƒ" }, { view: "import", label: "导入中心", icon: "⇧" }, { view: "settings", label: "账号与权限", icon: "⚙" }] }
+    { title: "管理", items: [{ view: "thresholds", label: "阈值与公式", icon: "ƒ" }, { view: "import", label: "导入页面", icon: "⇧" }, { view: "settings", label: "账号与权限", icon: "⚙" }] }
   ];
 
   const ACTION_TYPES = ["广告优化", "Listing优化", "价格调整", "促销活动", "库存处理", "评价与售后", "产品质量", "其他"];
