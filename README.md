@@ -4,7 +4,7 @@
 
 当前线上版本：`V9`
 正式网址：`https://leifarun.github.io/yunying-portal/`
-数据库迁移：`001`–`009`、`011`–`015` 已应用并验证；`010`、`016` 待执行
+数据库迁移：`001`–`009`、`011`–`016` 已应用并验证；`010` 待执行
 
 ## 当前发布摘要
 
@@ -139,7 +139,7 @@
 
 `supabase/migrations/016_task_assignment_actor.sql`
 
-`001`–`009`、`011`–`015` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 和 `016_task_assignment_actor.sql` 仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
+`001`–`009`、`011`–`016` 已应用到当前项目；`010_clear_action_history_safe_delete.sql` 仍需在 SQL Editor 执行。后续重建时请按文件名顺序执行。
 
 迁移已经应用到当前项目，并验证了：
 

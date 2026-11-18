@@ -5,7 +5,7 @@
 当前线上版本：`V9`
 状态：已发布，GitHub Pages 构建成功
 最近发布：任务分配按钮与文案排版微调 + 对比表身份标签改为“运营”
-数据库迁移：`001`–`009`、`011`–`015` 已应用并验证；`010`、`016` 待应用（016 任务分配操作人触发器）
+数据库迁移：`001`–`009`、`011`–`016` 已应用并验证；`010` 待应用（016 任务分配操作人触发器已生效）
 
 ## 一、如果这是新的 Codex 对话
 
@@ -238,7 +238,7 @@ Edge Function 使用服务端 Service Role，只允许创作者/主管按各自�
 - `supabase/migrations/013_department_team_group.sql`（已应用；profiles 新增 department/team_group）
 - `supabase/migrations/014_team_leader_role.sql`（待应用；新增组长职位、主管维护组长策略，并将王丹/胡昕怡设为组长）
 - `supabase/migrations/015_task_assignment_permissions.sql`（已应用；任务分配写入权限按主管/组长/组员分层）
-- `supabase/migrations/016_task_assignment_actor.sql`（待应用；任务分配操作人强制为当前登录账号）
+- `supabase/migrations/016_task_assignment_actor.sql`（已应用；任务分配操作人强制为当前登录账号）
 
 ## 五、导入与存储策略
 
