@@ -31,6 +31,11 @@
   };
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const firstChar = (name) => String(name || "?").trim().slice(0, 1) || "?";
+  const groupLabel = (value) => {
+    const text = String(value ?? "").trim();
+    if (!text) return "";
+    return text.endsWith("组") ? text : `${text}组`;
+  };
   const dateOnly = (date) => {
     const d = date instanceof Date ? date : new Date(date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -369,9 +374,9 @@
       { name: "雷发润", role: "主管", department: "运营三部", team_group: "" },
       { name: "夏永康", role: "组员", department: "运营三部", team_group: "3.2" },
       { name: "梁茜", role: "组员", department: "运营三部", team_group: "3.2" },
-      { name: "胡昕怡", role: "组员", department: "运营三部", team_group: "3.2" },
+      { name: "胡昕怡", role: "组长", department: "运营三部", team_group: "3.2" },
       { name: "高墅", role: "组员", department: "运营三部", team_group: "3.2" },
-      { name: "王丹", role: "组员", department: "运营三部", team_group: "3.1" },
+      { name: "王丹", role: "组长", department: "运营三部", team_group: "3.1" },
       { name: "钟桥峰", role: "组员", department: "运营三部", team_group: "3.1" },
       { name: "陈娟", role: "组员", department: "运营三部", team_group: "3.1" },
     ];
@@ -2231,12 +2236,12 @@ ${action.note || ""}
     const isCreator = isCreatorRole(profile.role);
     const isSupervisor = profile.role === "主管";
     const canViewTeam = isCreator || isSupervisor;
-    const canEditPerson = (person) => isCreator || (isSupervisor && person.role === "组员" && !person.archived_at);
-    const roleToPosition = { "创作者": "管理员", "主管": "主管", "组员": "运营" };
+    const canEditPerson = (person) => isCreator || (isSupervisor && ["组员", "组长"].includes(person.role) && !person.archived_at);
+    const roleToPosition = { "创作者": "管理员", "主管": "主管", "组长": "组长", "组员": "运营" };
     const roleOptions = (person) => isCreator
-      ? ["组员", "主管", "创作者"].map((role) => `<option value="${role}" ${person.role === role ? "selected" : ""}>${roleToPosition[role]}</option>`).join("")
+      ? ["组员", "组长", "主管", "创作者"].map((role) => `<option value="${role}" ${person.role === role ? "selected" : ""}>${roleToPosition[role]}</option>`).join("")
       : `<option selected>${escapeHtml(roleToPosition[person.role] || person.role)}</option>`;
-    $("#content").innerHTML = `<div class="page-head"><div><h1>账号与权限</h1><p>${isCreator ? "创作者可以管理所有账号、创建账号和归档账号。" : isSupervisor ? "主管可以维护组员信息，但不能创建、归档或修改主管/创作者。" : "你只能查看自己的账号信息。"}</p></div><div class="page-actions"><span class="pill ${isCreator ? "pill-purple" : "pill-green"}">${escapeHtml(profile.role)}</span></div></div>${isCreator ? `<section class="card site-name-setting"><div class="card-head"><div><h2>网站名称</h2><p>自定义浏览器标签、登录页和侧边栏显示的名称，保存后全团队刷新可见</p></div><span class="pill pill-purple">仅创作者</span></div><div class="card-body"><div class="site-name-form"><label>名称<span class="field-help">建议格式：主名称 · 副名称，最多 60 个字符</span><input id="siteNameInput" maxlength="60" value="${attr(state.appSettings?.site_name || DEFAULT_SITE_NAME)}" placeholder="例如：运营三部 · 内部运营中台"></label><button class="btn btn-primary" data-action="save-site-name">保存名称</button></div></div></section>` : ""}<div class="settings-grid"><section class="card profile-card"><div class="profile-avatar">${escapeHtml(firstChar(profile.name))}</div><h2>${escapeHtml(profile.name)}</h2><p>${escapeHtml(profile.role)} · ${escapeHtml(profile.login_name || state.session?.user?.email || "")}</p><div class="profile-meta"><div><span>登录用户名</span><b>${escapeHtml(profile.login_name || state.session?.user?.email || "—")}</b></div><div><span>账号状态</span><b class="good">在职</b></div><div><span>当前批次</span><b>${state.currentBatch ? `第 ${state.currentBatch.week_no} 周` : "未导入"}</b></div><div><span>登录方式</span><b>用户名 + 密码</b></div></div><button class="btn btn-danger btn-wide" style="margin-top:16px" data-action="logout">退出登录</button></section><section class="card"><div class="card-head"><div><h2>团队成员</h2><p>${isCreator ? "创作者可编辑、改名、重置密码和归档所有账号" : isSupervisor ? "主管只能编辑组员，不能创建或归档账号" : "仅显示本人账号"}</p></div>${isCreator ? `<button class="btn btn-sm btn-primary" data-action="open-create-account">＋ 新建账号</button>` : ""}</div><div class="card-body" style="padding:0">${canViewTeam ? `<div style="overflow:auto"><table class="account-table"><thead><tr><th>姓名</th><th>职位</th><th>部门</th><th>小组</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.profiles.map((person) => { const editable = canEditPerson(person); const self = person.id === profile.id; const resetAllowed = isCreator || (isSupervisor && person.role === "组员"); const position = roleToPosition[person.role] || person.role; const department = person.department || ""; const teamGroup = person.team_group || ""; return `<tr><td><input id="profileName-${person.id}" value="${attr(person.name)}" ${editable ? "" : "disabled"}></td><td><select id="profileRole-${person.id}" ${isCreator && !self ? "" : "disabled"}>${roleOptions(person)}</select></td><td>${escapeHtml(department || "—")}</td><td>${escapeHtml(teamGroup || "—")}</td><td><select id="profileActive-${person.id}" ${editable && !self ? "" : "disabled"}><option value="true" ${person.active ? "selected" : ""}>在职</option><option value="false" ${!person.active ? "selected" : ""}>离职</option></select></td><td><div class="account-actions">${editable ? `<button class="link-btn" data-action="save-profile" data-id="${person.id}">保存资料</button>` : ""}${resetAllowed ? `<button class="link-btn" data-action="open-reset-password" data-id="${person.id}">重置密码</button>` : ""}${isCreator ? `<button class="link-btn" data-action="open-rename-username" data-id="${person.id}">改用户名</button>` : ""}${isCreator && !self ? `<button class="link-btn danger-text" data-action="archive-account" data-id="${person.id}">归档账号</button>` : ""}</div></td></tr>`; }).join("")}</tbody></table></div>` : `<div class="empty"><b>${escapeHtml(profile.name)}</b><span>组员可查看全团队运营数据，并协助处理其他负责人的商品；账号与任务分配仍由管理角色维护</span></div>`}</div></section></div><section class="card" style="margin-top:16px"><div class="card-head"><div><h2>角色权限</h2><p>账号操作由数据库权限和 Edge Function 双重校验</p></div></div><div class="card-body setting-note"><b>创作者：</b>可修改所有人的信息、创建账号、修改用户名、重置密码、归档账号，并可使用全部数据管理功能。<br><b>主管：</b>只能维护组员姓名、在职/离职状态和密码；不能修改创作者/其他主管，也不能创建或归档账号。<br><b>组员：</b>可查看全团队产品、处理记录和周任务，也可协助处理其他负责人的商品；不能管理账号或任务分配。<br><b>登录：</b>组员输入用户名 + 密码，不需要真实邮箱。<br><b>归档：</b>归档后账号无法登录，历史处理记录仍然保留。Service Role Key 只存在 Edge Function 中，不会进入网页。</div></section>`;
+    $("#content").innerHTML = `<div class="page-head"><div><h1>账号与权限</h1><p>${isCreator ? "创作者可以管理所有账号、创建账号和归档账号。" : isSupervisor ? "主管可以维护组员/组长信息，但不能创建、归档或修改主管/创作者。" : "你只能查看自己的账号信息。"}</p></div><div class="page-actions"><span class="pill ${isCreator ? "pill-purple" : "pill-green"}">${escapeHtml(profile.role)}</span></div></div>${isCreator ? `<section class="card site-name-setting"><div class="card-head"><div><h2>网站名称</h2><p>自定义浏览器标签、登录页和侧边栏显示的名称，保存后全团队刷新可见</p></div><span class="pill pill-purple">仅创作者</span></div><div class="card-body"><div class="site-name-form"><label>名称<span class="field-help">建议格式：主名称 · 副名称，最多 60 个字符</span><input id="siteNameInput" maxlength="60" value="${attr(state.appSettings?.site_name || DEFAULT_SITE_NAME)}" placeholder="例如：运营三部 · 内部运营中台"></label><button class="btn btn-primary" data-action="save-site-name">保存名称</button></div></div></section>` : ""}<div class="settings-grid"><section class="card profile-card"><div class="profile-avatar">${escapeHtml(firstChar(profile.name))}</div><h2>${escapeHtml(profile.name)}</h2><p>${escapeHtml(profile.role)} · ${escapeHtml(profile.login_name || state.session?.user?.email || "")}</p><div class="profile-meta"><div><span>登录用户名</span><b>${escapeHtml(profile.login_name || state.session?.user?.email || "—")}</b></div><div><span>账号状态</span><b class="good">在职</b></div><div><span>当前批次</span><b>${state.currentBatch ? `第 ${state.currentBatch.week_no} 周` : "未导入"}</b></div><div><span>登录方式</span><b>用户名 + 密码</b></div></div><button class="btn btn-danger btn-wide" style="margin-top:16px" data-action="logout">退出登录</button></section><section class="card"><div class="card-head"><div><h2>团队成员</h2><p>${isCreator ? "创作者可编辑、改名、重置密码和归档所有账号" : isSupervisor ? "主管只能编辑组员/组长，不能创建或归档账号" : "仅显示本人账号"}</p></div>${isCreator ? `<button class="btn btn-sm btn-primary" data-action="open-create-account">＋ 新建账号</button>` : ""}</div><div class="card-body" style="padding:0">${canViewTeam ? `<div style="overflow:auto"><table class="account-table"><thead><tr><th>姓名</th><th>职位</th><th>部门</th><th>小组</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.profiles.map((person) => { const editable = canEditPerson(person); const self = person.id === profile.id; const resetAllowed = isCreator || (isSupervisor && ["组员", "组长"].includes(person.role)); const position = roleToPosition[person.role] || person.role; const department = person.department || ""; const teamGroup = person.team_group || ""; return `<tr><td><input id="profileName-${person.id}" value="${attr(person.name)}" ${editable ? "" : "disabled"}></td><td><select id="profileRole-${person.id}" ${isCreator && !self ? "" : "disabled"}>${roleOptions(person)}</select></td><td>${isCreator ? `<input id="profileDepartment-${person.id}" value="${attr(department)}" placeholder="如 运营三部">` : escapeHtml(department || "—")}</td><td>${isCreator ? `<input id="profileGroup-${person.id}" value="${attr(groupLabel(teamGroup))}" placeholder="如 3.1组">` : escapeHtml(groupLabel(teamGroup) || "—")}</td><td><select id="profileActive-${person.id}" ${editable && !self ? "" : "disabled"}><option value="true" ${person.active ? "selected" : ""}>在职</option><option value="false" ${!person.active ? "selected" : ""}>离职</option></select></td><td><div class="account-actions">${editable ? `<button class="link-btn" data-action="save-profile" data-id="${person.id}">保存资料</button>` : ""}${resetAllowed ? `<button class="link-btn" data-action="open-reset-password" data-id="${person.id}">重置密码</button>` : ""}${isCreator ? `<button class="link-btn" data-action="open-rename-username" data-id="${person.id}">改用户名</button>` : ""}${isCreator && !self ? `<button class="link-btn danger-text" data-action="archive-account" data-id="${person.id}">归档账号</button>` : ""}</div></td></tr>`; }).join("")}</tbody></table></div>` : `<div class="empty"><b>${escapeHtml(profile.name)}</b><span>组员/组长可查看全团队运营数据，并协助处理其他负责人的商品；账号与任务分配仍由管理角色维护</span></div>`}</div></section></div><section class="card" style="margin-top:16px"><div class="card-head"><div><h2>角色权限</h2><p>账号操作由数据库权限和 Edge Function 双重校验</p></div></div><div class="card-body setting-note"><b>创作者：</b>可修改所有人的信息、创建账号、修改用户名、重置密码、归档账号，并可使用全部数据管理功能。<br><b>主管：</b>只能维护组员/组长姓名、在职/离职状态和密码；不能修改创作者/其他主管，也不能创建或归档账号。<br><b>组长：</b>负责本小组日常运营，可查看全团队数据并协助处理商品；不能管理账号或任务分配。<br><b>组员：</b>可查看全团队产品、处理记录和周任务，也可协助处理其他负责人的商品；不能管理账号或任务分配。<br><b>登录：</b>组员/组长输入用户名 + 密码，不需要真实邮箱。<br><b>归档：</b>归档后账号无法登录，历史处理记录仍然保留。Service Role Key 只存在 Edge Function 中，不会进入网页。</div></section>`;
   }
   async function saveSiteName() {
     if (!isCreatorRole(state.profile?.role)) { toast("只有创作者可以修改网站名称", "error"); return; }
@@ -2276,18 +2281,32 @@ ${action.note || ""}
   async function saveProfile(id) {
     try {
       const name = $(`#profileName-${CSS.escape(id)}`)?.value.trim(), role = $(`#profileRole-${CSS.escape(id)}`)?.value, active = $(`#profileActive-${CSS.escape(id)}`)?.value === "true";
+      const departmentInput = $(`#profileDepartment-${CSS.escape(id)}`);
+      const groupInput = $(`#profileGroup-${CSS.escape(id)}`);
+      const department = departmentInput ? departmentInput.value.trim() : undefined;
+      const teamGroup = groupInput ? groupInput.value.trim().replace(/\s*组\s*$/, "") : undefined;
       if (!name) throw new Error("姓名不能为空");
       const oldProfile = state.profiles.find((p) => p.id === id);
       if (active === false && oldProfile) {
         const confirmed = confirm(`确认将 ${oldProfile.name} 设为离职？离职后该账号将无法登录和查看数据。`);
         if (!confirmed) return;
       }
-      const { error } = await sb.from("profiles").update({ name, role, active }).eq("id", id);
+      const updates = { name, role, active };
+      if (department !== undefined) updates.department = department || null;
+      if (teamGroup !== undefined) updates.team_group = teamGroup || null;
+      const { error } = await sb.from("profiles").update(updates).eq("id", id);
       if (error) throw error;
-      if (oldProfile) Object.assign(oldProfile, { name, role, active });
+      if (oldProfile) Object.assign(oldProfile, updates);
       toast("账号资料已保存", "success");
       renderView();
-    } catch (error) { toast(errorMessage(error), "error"); }
+    } catch (error) {
+      const message = String(error?.message || "");
+      if (message.includes("profiles_role_check") || message.includes("role_check")) {
+        toast("保存失败：请先在 Supabase 执行迁移 014_team_leader_role.sql，才能使用组长职位", "error");
+      } else {
+        toast(errorMessage(error), "error");
+      }
+    }
   }
 
   async function callAdminUsers(payload) {
@@ -2317,7 +2336,7 @@ ${action.note || ""}
 
   function openCreateAccount() {
     $("#modal").className = "modal";
-    $("#modal").innerHTML = `<div class="modal-head"><h2>新建团队账号</h2><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="form-grid two"><label>姓名<span class="field-help">必须与导入表的「负责人」完全一致</span><input id="newAccountName" placeholder="例如：王丹"></label><label>用户名<span class="field-help">登录时使用，可使用中文、字母、数字、点、下划线或短横线</span><input id="newAccountUsername" autocomplete="off" placeholder="例如：wangdan 或 王丹"></label><label>初始密码<span class="field-help">至少 8 位</span><input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="设置初始密码"></label><label>确认密码<input id="newAccountPassword2" type="password" autocomplete="new-password" placeholder="再次输入密码"></label><label>角色<select id="newAccountRole"><option>组员</option><option>主管</option><option>创作者</option></select></label></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="create-account-submit">创建账号</button></div>`;
+    $("#modal").innerHTML = `<div class="modal-head"><h2>新建团队账号</h2><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="form-grid two"><label>姓名<span class="field-help">必须与导入表的「负责人」完全一致</span><input id="newAccountName" placeholder="例如：王丹"></label><label>用户名<span class="field-help">登录时使用，可使用中文、字母、数字、点、下划线或短横线</span><input id="newAccountUsername" autocomplete="off" placeholder="例如：wangdan 或 王丹"></label><label>初始密码<span class="field-help">至少 8 位</span><input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="设置初始密码"></label><label>确认密码<input id="newAccountPassword2" type="password" autocomplete="new-password" placeholder="再次输入密码"></label><label>角色<select id="newAccountRole"><option>组员</option><option>组长</option><option>主管</option><option>创作者</option></select></label></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="create-account-submit">创建账号</button></div>`;
     showModal();
   }
 

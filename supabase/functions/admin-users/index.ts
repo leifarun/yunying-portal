@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const username = normalizeUsername(body.username);
     const password = String(body.password || "");
     const name = String(body.name || "").trim();
-    const role = ["主管", "创作者"].includes(String(body.role)) ? String(body.role) : "组员";
+    const role = ["组长", "主管", "创作者"].includes(String(body.role)) ? String(body.role) : "组员";
 
     if (!name) return json({ error: "姓名不能为空" }, 400);
     if (!/^[\p{L}\p{N}._-]{2,32}$/u.test(username)) {
@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (targetError) return json({ error: targetError.message }, 500);
     if (!targetProfile) return json({ error: "目标账号不存在" }, 404);
-    if (callerProfile.role !== "创作者" && targetProfile.role !== "组员") {
-      return json({ error: "主管只能重置组员的密码" }, 403);
+    if (callerProfile.role !== "创作者" && !["组员", "组长"].includes(targetProfile.role)) {
+      return json({ error: "主管只能重置组员/组长的密码" }, 403);
     }
 
     const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, { password });

@@ -259,6 +259,12 @@
     });
   }
 
+  function groupLabel(value) {
+    const text = String(value ?? "").trim();
+    if (!text) return "";
+    return text.endsWith("组") ? text : `${text}组`;
+  }
+
   function prepareDataset(rt) {
     const batches = sortedBatches(rt.data);
     const summaries = (rt.data.summaries || []).map(normalizeSnapshotRow);
@@ -274,31 +280,51 @@
     summaries.forEach((row) => { if (row.owner) ownerSet.add(row.owner); });
     byBatch.forEach((rows) => rows.forEach((row) => { if (row.owner) ownerSet.add(row.owner); }));
     const owners = [...ownerSet].sort((a, b) => a.localeCompare(b, "zh-CN"));
-    // 公司化改造：查看范围从“数据里出现过的负责人”改为“按账号名单固定展示”。
-    // 主管按部门汇总，组员展示个人数据；“所有人”汇总全部部门。
+    // 公司化改造：查看范围按账号名单固定展示。
+    // 所有人汇总全部部门；主管按部门汇总；小组按“部门 + 小组”汇总；组员/组长展示个人数据。
     const profiles = Array.isArray(rt.data.profiles) ? rt.data.profiles : [];
     const departmentByOwner = new Map();
+    const groupByOwner = new Map();
+    const roleByOwner = new Map();
     const supervisors = [];
     const members = [];
+    const groupSet = new Map();
     profiles.forEach((profile) => {
       const name = profile?.name;
       if (!name || profile.active === false) return;
       if (profile.department) departmentByOwner.set(name, profile.department);
+      if (profile.team_group) {
+        groupByOwner.set(name, profile.team_group);
+        if (profile.department) {
+          const key = `${profile.department}::${profile.team_group}`;
+          if (!groupSet.has(key)) groupSet.set(key, { department: profile.department, group: profile.team_group });
+        }
+      }
+      if (profile.role) roleByOwner.set(name, profile.role);
       if (profile.role === "主管") supervisors.push(name);
-      else if (profile.role === "组员") members.push(name);
+      else if (profile.role === "组员" || profile.role === "组长") members.push(name);
     });
     supervisors.sort((a, b) => a.localeCompare(b, "zh-CN"));
     members.sort((a, b) => a.localeCompare(b, "zh-CN"));
+    const groupItems = [...groupSet.entries()].map(([key, item]) => ({ key, ...item })).sort((a, b) => a.group.localeCompare(b.group, "zh-CN"));
+    const groupLabelCounts = new Map();
+    groupItems.forEach((item) => { const label = groupLabel(item.group); groupLabelCounts.set(label, (groupLabelCounts.get(label) || 0) + 1); });
+    const groupOptions = groupItems.map((item) => {
+      const base = groupLabel(item.group);
+      const label = groupLabelCounts.get(base) > 1 ? `${base}（${item.department}）` : base;
+      return { value: `group:${item.key}`, label };
+    });
     const scopeOptions = [
       { value: "all", label: "所有人（全部部门）" },
       ...supervisors.map((name) => ({ value: `dept:${name}`, label: `${name}（部门）` })),
+      ...groupOptions,
       ...members.map((name) => ({ value: name, label: name }))
     ];
     const availableIds = new Set([...byBatch.entries()].filter(([, rows]) => rows.length).map(([id]) => Number(id)));
     if (!rt.batchId || !batches.some((batch) => Number(batch.id) === Number(rt.batchId))) {
       rt.batchId = availableIds.has(currentBatchId) ? currentBatchId : [...availableIds].pop() || null;
     }
-    return { batches, byBatch, owners, scopeOptions, departmentByOwner, supervisors, availableIds, currentBatchId, currentBatch };
+    return { batches, byBatch, owners, scopeOptions, departmentByOwner, groupByOwner, roleByOwner, groupItems, supervisors, availableIds, currentBatchId, currentBatch };
   }
 
   function rowsForScope(dataset, batchId, scope) {
@@ -309,6 +335,14 @@
       const department = dataset.departmentByOwner.get(supervisor);
       if (!department) return [];
       return rows.filter((row) => dataset.departmentByOwner.get(row.owner) === department);
+    }
+    if (typeof scope === "string" && scope.startsWith("group:")) {
+      const key = scope.slice(6);
+      const split = key.indexOf("::");
+      if (split < 0) return [];
+      const department = key.slice(0, split);
+      const group = key.slice(split + 2);
+      return rows.filter((row) => dataset.departmentByOwner.get(row.owner) === department && dataset.groupByOwner.get(row.owner) === group);
     }
     return rows.filter((row) => row.owner === scope);
   }
@@ -329,6 +363,11 @@
   function scopeLabel(scope) {
     if (scope === "all") return "所有人";
     if (typeof scope === "string" && scope.startsWith("dept:")) return `${scope.slice(5)}（部门）`;
+    if (typeof scope === "string" && scope.startsWith("group:")) {
+      const key = scope.slice(6);
+      const split = key.indexOf("::");
+      return groupLabel(split >= 0 ? key.slice(split + 2) : key);
+    }
     return scope;
   }
 
@@ -541,10 +580,10 @@
     return comparisonColumns().filter((column) => runtime.teamColumns.has(column.key));
   }
 
-  function sortedComparisonRows(dataset, batch, runtime) {
-    const rawRows = dataset.byBatch.get(Number(batch?.id)) || [];
+  function sortedComparisonRows(dataset, batch, runtime, scope = "all") {
+    const rawRows = rowsForScope(dataset, batch?.id, scope);
     const byOwner = new Map(rawRows.map((row) => [row.owner, deriveSnapshot(row, null)]));
-    return dataset.owners.filter((owner) => byOwner.has(owner)).map((owner) => ({ owner, snapshot: byOwner.get(owner) })).sort((a, b) => {
+    return [...byOwner.keys()].map((owner) => ({ owner, snapshot: byOwner.get(owner) })).sort((a, b) => {
       const av = a.snapshot[runtime.teamSortKey], bv = b.snapshot[runtime.teamSortKey];
       const aEmpty = av === null || av === undefined || Number.isNaN(Number(av));
       const bEmpty = bv === null || bv === undefined || Number.isNaN(Number(bv));
@@ -554,8 +593,8 @@
     });
   }
 
-  function renderComparison(dataset, batch, runtime, total) {
-    const rows = sortedComparisonRows(dataset, batch, runtime);
+  function renderComparison(dataset, batch, runtime, total, scope = "all") {
+    const rows = sortedComparisonRows(dataset, batch, runtime, scope);
     if (!rows.length) return "";
     const columns = visibleTeamColumns(runtime);
     const sortMark = (key) => runtime.teamSortKey === key
@@ -563,9 +602,9 @@
       : ' <span class="sd-sort-mark">↕</span>';
     return `
       <section class="sd-comparison-card">
-        <div class="sd-comparison-head"><div><h2>团队指标对比</h2><p>${batchDateText(batch)} · 点击负责人行可切换到个人数据</p></div><div class="sd-head-actions"><button class="sd-small-btn" type="button" data-sd-open-team-columns>列配置 / 模板</button><span class="pill pill-blue">${rows.length} 人</span><span class="pill pill-gray">当前批次汇总</span></div></div>
+        <div class="sd-comparison-head"><div><h2>团队指标对比</h2><p>${escapeHtml(scopeLabel(scope))} · ${batchDateText(batch)} · 点击负责人行可切换到个人数据</p></div><div class="sd-head-actions"><button class="sd-small-btn" type="button" data-sd-open-team-columns>列配置 / 模板</button><span class="pill pill-blue">${rows.length} 人</span><span class="pill pill-gray">当前批次汇总</span></div></div>
         <div class="sd-comparison-scroll"><table class="sd-comparison-table" aria-label="团队指标对比"><thead><tr><th>负责人</th>${columns.map((column) => `<th><button type="button" class="sd-sort-btn" data-sd-sort-team="${column.key}" title="点击按${escapeHtml(column.label)}排序">${escapeHtml(column.label)}${sortMark(column.key)}</button></th>`).join("")}</tr></thead><tbody>
-          ${rows.map(({ owner, snapshot }) => `<tr data-sd-person="${escapeHtml(owner)}" title="查看 ${escapeHtml(owner)} 的数据"><td><b>${escapeHtml(owner)}</b><small>成员</small></td>${columns.map((column) => { const metric = metricFor(column); const unit = metricUnit(metric); const value = snapshot[column.key]; return `<td title="${escapeHtml(column.label)}">${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</td>`; }).join("")}</tr>`).join("")}
+          ${rows.map(({ owner, snapshot }) => { const role = dataset.roleByOwner.get(owner); const roleText = role === "组长" ? "组长" : role === "主管" ? "主管" : "成员"; return `<tr data-sd-person="${escapeHtml(owner)}" title="查看 ${escapeHtml(owner)} 的数据"><td><b>${escapeHtml(owner)}</b><small>${roleText}</small></td>${columns.map((column) => { const metric = metricFor(column); const unit = metricUnit(metric); const value = snapshot[column.key]; return `<td title="${escapeHtml(column.label)}">${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</td>`; }).join("")}</tr>`; }).join("")}
         </tbody>${total ? `<tfoot><tr><td><b>团队合计</b></td>${columns.map((column) => { const metric = metricFor(column); const unit = metricUnit(metric); const value = total[column.key]; return `<td>${escapeHtml(metricText(metric, value, true))}${unit && value !== null ? `<small>${escapeHtml(unit)}</small>` : ""}</td>`; }).join("")}</tr></tfoot>` : ""}</table></div><div class="sd-comparison-foot"><span>共 ${rows.length} 人</span><span>列配置保存在当前浏览器</span></div>
       </section>`;
   }
@@ -719,10 +758,11 @@
     const available = dataset.batches.filter((item) => dataset.availableIds.has(Number(item.id)));
     const weekOptions = [...available].reverse().map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>${batchDateText(item)}${Number(item.id) === Number(dataset.currentBatchId) ? "（当前）" : ""}</option>`).join("");
     const ownerOptions = dataset.scopeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === scope ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("");
+    const showComparison = scope === "all" || scope.startsWith("dept:") || scope.startsWith("group:");
     return `
       <div class="sd-page-head"><div class="sd-page-title"><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "全部部门合计" : `当前查看 ${escapeHtml(scopeLabel(scope))}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label>${scope !== "all" ? `<button class="sd-small-btn" type="button" data-sd-scope-all>返回所有人</button>` : ""}</div></div>
       ${renderSnapshot(current, previous, scope, batch, isCurrent, visible)}
-      ${scope === "all" ? renderComparison(dataset, batch, rt, current) : ""}
+      ${showComparison ? renderComparison(dataset, batch, rt, current, scope) : ""}
       <div class="sd-category-nav">${CATEGORIES.map((category, index) => `<button class="sd-category-link ${index === 0 ? "active" : ""}" type="button" data-sd-scroll="${category.id}"><span>${category.number}</span>${escapeHtml(category.short)}</button>`).join("")}<button class="sd-category-link" type="button" data-sd-scroll="history"><span>05</span>看板</button><span class="sd-nav-spacer"></span>${renderRangeControl(rt)}</div>
       <div>${CATEGORIES.map((category) => renderSection(category, visible, current, previous, dataset, rt)).join("")}</div>
       ${renderHistorySection(rt.lastView, rt)}
