@@ -546,6 +546,23 @@
     });
   }
 
+  const REMEMBER_LOGIN_KEY = "portal-login-name";
+
+  function restoreRememberedLogin() {
+    try {
+      const saved = localStorage.getItem(REMEMBER_LOGIN_KEY);
+      const input = $("#loginEmail"); const box = $("#rememberName");
+      if (saved && input) { input.value = saved; if (box) box.checked = true; }
+    } catch (_) {}
+  }
+
+  function persistRememberedLogin(name, remember) {
+    try {
+      if (remember && name) localStorage.setItem(REMEMBER_LOGIN_KEY, name);
+      else localStorage.removeItem(REMEMBER_LOGIN_KEY);
+    } catch (_) {}
+  }
+
   async function handleLogin(event) {
     event.preventDefault();
     const identifier = $("#loginEmail").value.trim();
@@ -557,6 +574,7 @@
     try {
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      persistRememberedLogin(identifier, $("#rememberName")?.checked);
       await enterWorkspace(data.session);
     } catch (error) { errorEl.textContent = errorMessage(error); }
     finally { btn.disabled = false; btn.textContent = "登录"; }
@@ -578,6 +596,7 @@
     state.session = null; state.profile = null;
     $("#boot")?.classList.add("hidden"); $("#portal")?.classList.add("hidden");
     $("#authScreen")?.classList.remove("hidden"); $("#loginPassword").value = "";
+    restoreRememberedLogin();
   }
 
   async function logout() {

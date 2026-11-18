@@ -2,10 +2,10 @@
 
 最后更新：2026-11-18
 
-当前线上版本：`V1`
+当前线上版本：`V4`
 状态：已发布，GitHub Pages 构建成功
-最近发布：05 看板改为“行=周期、列=指标”的横向对比表，趋势范围加回“全部”
-数据库迁移：`001`–`009`、`011`、`012` 已应用并验证；`010` 待应用；`013` 待应用（profiles 新增 department/team_group）
+最近发布：看板易用性优化（05 看板导航高亮修复、字号下限统一、排序箭头与 hover 反馈、登录页记住用户名）
+数据库迁移：`001`–`009`、`011`、`012` 已应用并验证；`010` 待应用；`013` 已应用（profiles 新增 department/team_group）
 
 ## 一、如果这是新的 Codex 对话
 
@@ -16,7 +16,7 @@
 - 前端源码：`C:\Users\lenovo\Documents\Codex\2026-10-21\n-h\outputs\yunying-portal`
 - GitHub 仓库：`https://github.com/leifarun/yunying-portal`
 - 正式网址：`https://leifarun.github.io/yunying-portal/`
-- 当前静态资源版本：`V1`
+- 当前静态资源版本：`V4`
 - Supabase 项目引用：`ofwvjfshnnajnfkxexno`
 - Supabase URL：`https://ofwvjfshnnajnfkxexno.supabase.co`
 - 前端配置：`assets/config.js`，只允许使用 Publishable Key

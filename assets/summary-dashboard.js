@@ -529,7 +529,9 @@
     const rows = sortedComparisonRows(dataset, batch, runtime);
     if (!rows.length) return "";
     const columns = visibleTeamColumns(runtime);
-    const sortMark = (key) => runtime.teamSortKey === key ? (runtime.teamSortDir === "desc" ? " ↓" : " ↑") : "";
+    const sortMark = (key) => runtime.teamSortKey === key
+      ? ` <span class="sd-sort-mark on">${runtime.teamSortDir === "desc" ? "↓" : "↑"}</span>`
+      : ' <span class="sd-sort-mark">↕</span>';
     return `
       <section class="sd-comparison-card">
         <div class="sd-comparison-head"><div><h2>团队指标对比</h2><p>${batchDateText(batch)} · 点击负责人行可切换到个人数据</p></div><div class="sd-head-actions"><button class="sd-small-btn" type="button" data-sd-open-team-columns>列配置 / 模板</button><span class="pill pill-blue">${rows.length} 人</span><span class="pill pill-gray">当前批次汇总</span></div></div>
