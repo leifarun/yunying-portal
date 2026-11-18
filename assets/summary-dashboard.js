@@ -274,16 +274,43 @@
     summaries.forEach((row) => { if (row.owner) ownerSet.add(row.owner); });
     byBatch.forEach((rows) => rows.forEach((row) => { if (row.owner) ownerSet.add(row.owner); }));
     const owners = [...ownerSet].sort((a, b) => a.localeCompare(b, "zh-CN"));
+    // 公司化改造：查看范围从“数据里出现过的负责人”改为“按账号名单固定展示”。
+    // 主管按部门汇总，组员展示个人数据；“所有人”汇总全部部门。
+    const profiles = Array.isArray(rt.data.profiles) ? rt.data.profiles : [];
+    const departmentByOwner = new Map();
+    const supervisors = [];
+    const members = [];
+    profiles.forEach((profile) => {
+      const name = profile?.name;
+      if (!name || profile.active === false) return;
+      if (profile.department) departmentByOwner.set(name, profile.department);
+      if (profile.role === "主管") supervisors.push(name);
+      else if (profile.role === "组员") members.push(name);
+    });
+    supervisors.sort((a, b) => a.localeCompare(b, "zh-CN"));
+    members.sort((a, b) => a.localeCompare(b, "zh-CN"));
+    const scopeOptions = [
+      { value: "all", label: "所有人（全部部门）" },
+      ...supervisors.map((name) => ({ value: `dept:${name}`, label: `${name}（部门）` })),
+      ...members.map((name) => ({ value: name, label: name }))
+    ];
     const availableIds = new Set([...byBatch.entries()].filter(([, rows]) => rows.length).map(([id]) => Number(id)));
     if (!rt.batchId || !batches.some((batch) => Number(batch.id) === Number(rt.batchId))) {
       rt.batchId = availableIds.has(currentBatchId) ? currentBatchId : [...availableIds].pop() || null;
     }
-    return { batches, byBatch, owners, availableIds, currentBatchId, currentBatch };
+    return { batches, byBatch, owners, scopeOptions, departmentByOwner, supervisors, availableIds, currentBatchId, currentBatch };
   }
 
   function rowsForScope(dataset, batchId, scope) {
     const rows = dataset.byBatch.get(Number(batchId)) || [];
-    return scope === "all" ? rows : rows.filter((row) => row.owner === scope);
+    if (scope === "all") return rows;
+    if (typeof scope === "string" && scope.startsWith("dept:")) {
+      const supervisor = scope.slice(5);
+      const department = dataset.departmentByOwner.get(supervisor);
+      if (!department) return [];
+      return rows.filter((row) => dataset.departmentByOwner.get(row.owner) === department);
+    }
+    return rows.filter((row) => row.owner === scope);
   }
 
   function buildSeries(dataset, scope) {
@@ -300,7 +327,9 @@
   }
 
   function scopeLabel(scope) {
-    return scope === "all" ? "所有人" : scope;
+    if (scope === "all") return "所有人";
+    if (typeof scope === "string" && scope.startsWith("dept:")) return `${scope.slice(5)}（部门）`;
+    return scope;
   }
 
   function selectedBatch(dataset, batchId) {
@@ -677,7 +706,8 @@
     if (!dataset.batches.length) return `<div class="card"><div class="sd-empty"><b>尚未导入周数据</b><span>请先在导入中心完成本周 Listing 数据导入。</span></div></div>`;
     const batch = selectedBatch(dataset, rt.batchId) || dataset.batches.at(-1);
     dataset.selectedBatch = batch;
-    const scope = rt.scope === "all" || dataset.owners.includes(rt.scope) ? rt.scope : "all";
+    const validScopes = new Set(dataset.scopeOptions.map((option) => option.value));
+    const scope = validScopes.has(rt.scope) ? rt.scope : "all";
     rt.scope = scope;
     const series = buildSeries(dataset, scope);
     const selectedIndex = Math.max(0, dataset.batches.findIndex((item) => Number(item.id) === Number(batch.id)));
@@ -688,9 +718,9 @@
     const isCurrent = Number(batch.id) === Number(dataset.currentBatchId);
     const available = dataset.batches.filter((item) => dataset.availableIds.has(Number(item.id)));
     const weekOptions = [...available].reverse().map((item) => `<option value="${item.id}" ${Number(item.id) === Number(batch.id) ? "selected" : ""}>${batchDateText(item)}${Number(item.id) === Number(dataset.currentBatchId) ? "（当前）" : ""}</option>`).join("");
-    const ownerOptions = [`<option value="all" ${scope === "all" ? "selected" : ""}>所有人</option>`, ...dataset.owners.map((owner) => `<option value="${escapeHtml(owner)}" ${scope === owner ? "selected" : ""}>${escapeHtml(owner)}</option>`)].join("");
+    const ownerOptions = dataset.scopeOptions.map((option) => `<option value="${escapeHtml(option.value)}" ${option.value === scope ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("");
     return `
-      <div class="sd-page-head"><div class="sd-page-title"><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "所有成员合计" : `当前查看 ${escapeHtml(scope)}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label>${scope !== "all" ? `<button class="sd-small-btn" type="button" data-sd-scope-all>返回所有人</button>` : ""}</div></div>
+      <div class="sd-page-head"><div class="sd-page-title"><h1>总数据看板</h1><p>${batchDateText(batch)} · ${isCurrent ? "当前周实时汇总" : "历史批次快照"} · ${scope === "all" ? "全部部门合计" : `当前查看 ${escapeHtml(scopeLabel(scope))}`}</p></div><div class="sd-page-actions"><label class="sd-control"><span>周批次</span><select data-sd-week>${weekOptions}</select></label><label class="sd-control"><span>查看范围</span><select data-sd-scope>${ownerOptions}</select></label>${scope !== "all" ? `<button class="sd-small-btn" type="button" data-sd-scope-all>返回所有人</button>` : ""}</div></div>
       ${renderSnapshot(current, previous, scope, batch, isCurrent, visible)}
       ${scope === "all" ? renderComparison(dataset, batch, rt, current) : ""}
       <div class="sd-category-nav">${CATEGORIES.map((category, index) => `<button class="sd-category-link ${index === 0 ? "active" : ""}" type="button" data-sd-scroll="${category.id}"><span>${category.number}</span>${escapeHtml(category.short)}</button>`).join("")}<button class="sd-category-link" type="button" data-sd-scroll="history"><span>05</span>看板</button><span class="sd-nav-spacer"></span>${renderRangeControl(rt)}</div>
@@ -930,7 +960,13 @@
       return;
     }
     const personRow = event.target.closest("[data-sd-person]");
-    if (personRow) { runtime.scope = personRow.dataset.sdPerson; render(runtime, true); return; }
+    if (personRow) {
+      const personName = personRow.dataset.sdPerson;
+      const dataset = runtime.lastView?.dataset;
+      runtime.scope = dataset?.supervisors?.includes(personName) ? `dept:${personName}` : personName;
+      render(runtime, true);
+      return;
+    }
     if (event.target.closest("[data-sd-scope-all]")) { runtime.scope = "all"; render(runtime, true); return; }
     const rangeButton = event.target.closest("[data-sd-range]");
     if (rangeButton) { runtime.range = rangeButton.dataset.sdRange; render(runtime, true); return; }

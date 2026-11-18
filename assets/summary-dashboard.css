@@ -321,8 +321,8 @@
 }
 .sd-hb-table td { height: 46px; padding: 5px 12px; border-bottom: 1px solid #edf1f6; background: #fff; white-space: nowrap; text-align: center; vertical-align: middle; }
 .sd-hb-table tbody tr:last-child td { border-bottom: 0; }
-.sd-hb-date-fix { position: sticky; left: 0; z-index: 8; min-width: 128px; text-align: center !important; box-shadow: 7px 0 10px -10px rgba(37,52,77,.32); vertical-align: middle; }
-.sd-hb-name-fix { position: sticky; left: 128px; z-index: 7; min-width: 88px; text-align: center !important; box-shadow: 7px 0 10px -10px rgba(37,52,77,.32); vertical-align: middle; }
+.sd-hb-table th.sd-hb-date-fix { position: sticky; left: 0; z-index: 8; min-width: 128px; text-align: center !important; box-shadow: 7px 0 10px -10px rgba(37,52,77,.32); vertical-align: middle; }
+.sd-hb-table th.sd-hb-name-fix { position: sticky; left: 128px; z-index: 7; min-width: 88px; text-align: center !important; box-shadow: 7px 0 10px -10px rgba(37,52,77,.32); vertical-align: middle; }
 .sd-hb-date { position: sticky; left: 0; z-index: 3; min-width: 128px; background: #f7faff; text-align: center; vertical-align: middle; }
 .sd-hb-date b { display: block; color: var(--navy); font-size: 10.5px; text-align: center; }
 .sd-hb-date small { display: block; margin-top: 1px; color: var(--muted); font-size: 10px; text-align: center; }
