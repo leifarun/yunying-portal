@@ -10,6 +10,18 @@
 - 不复制 `README_v1.md`、`PROJECT_STATE_old.md` 等历史副本，历史版本以 Git 提交记录为准
 - 数据库结构变化：必须新增编号迁移文件，不能只改生产数据库
 
+## 2026-11-18（账号表格重构 + logo 替换 + 对齐修复）
+
+- 账号与权限页表格：表头从"姓名 | 用户名 | 角色 | 状态 | 操作"改为"姓名 | 职位 | 部门 | 小组 | 状态 | 操作"
+  - 去掉了冗余的"用户名"列（login_name 仍通过"改用户名"按钮管理）
+  - "角色"改名为"职位"，显示值映射：组员→运营、主管→主管、创作者→管理员
+  - 新增"部门"和"小组"列（需应用迁移 013_department_team_group.sql）
+- 侧边栏品牌图标和顶部用户头像改为公司 logo（assets/company-logo-transparent.png）
+- 账号表格（account-table）表头与单元格改为上下左右居中对齐
+- 05 看板历史对比表（sd-hb-table）表头与单元格改为上下左右居中对齐
+- 新增迁移文件 supabase/migrations/013_department_team_group.sql：profiles 表新增 department 和 team_group 字段
+- demo 数据扩展为完整团队成员列表并填充部门/小组信息
+
 ## 2026-11-17（版本标识切换为 V1）
 
 - 当前版本标识由 `v=48` 切换为 `V1`
