@@ -776,17 +776,40 @@
   function render(runtime, keepScroll = false) {
     const scrollY = window.scrollY;
     runtime.chartModels = {};
+    // 清理旧的 scroll listener
+    if (runtime._sdOnScroll) window.removeEventListener("scroll", runtime._sdOnScroll);
+    runtime._sdOnScroll = null; runtime._sdSections = null; runtime._sdLinks = null;
     runtime.container.innerHTML = renderPage(runtime);
     drawCharts(runtime);
-    runtime.observer?.disconnect();
     const sections = [...runtime.container.querySelectorAll("[data-sd-section]")];
     const links = [...runtime.container.querySelectorAll("[data-sd-scroll]")];
+    runtime._sdSections = sections;
+    runtime._sdLinks = links;
     if (sections.length) {
-      runtime.observer = new IntersectionObserver((entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) links.forEach((link) => link.classList.toggle("active", link.dataset.sdScroll === visible.target.dataset.sdSection));
-      }, { rootMargin: "-130px 0px -60% 0px", threshold: [0.05, .25, .5] });
-      sections.forEach((section) => runtime.observer.observe(section));
+      // 直接用 scroll + rAF，找顶部最接近视口 140px 的 section
+      // 滚到底部时强制最后一个 section 高亮
+      const updateActive = () => {
+        const sections = runtime._sdSections; const links = runtime._sdLinks;
+        if (!sections?.length || !links?.length) return;
+        const needle = 140;
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        const atBottom = window.scrollY >= maxScroll - 5;
+        let best = null;
+        if (atBottom) {
+          best = sections[sections.length - 1];
+        } else {
+          const marked = sections.map(s => ({ el: s, top: s.getBoundingClientRect().top }));
+          best = marked.reduce((prev, curr) => Math.abs(curr.top - needle) < Math.abs(prev.top - needle) ? curr : prev).el;
+        }
+        links.forEach((link) => link.classList.toggle("active", link.dataset.sdScroll === best.dataset.sdSection));
+      };
+      runtime._sdScrollRaf = null;
+      runtime._sdOnScroll = () => {
+        if (runtime._sdScrollRaf) return;
+        runtime._sdScrollRaf = requestAnimationFrame(() => { updateActive(); runtime._sdScrollRaf = null; });
+      };
+      window.addEventListener("scroll", runtime._sdOnScroll, { passive: true });
+      updateActive(); // 初始触发一次
     }
     if (keepScroll) requestAnimationFrame(() => window.scrollTo({ top: scrollY, behavior: "instant" }));
   }
