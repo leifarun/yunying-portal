@@ -1,7 +1,8 @@
 # 运营中台 · 新部门独立部署手册
 
-> 适用场景：另一个部门需要一套自己的运营中台，使用自己的 GitHub 仓库、自己的 Supabase 项目和自己的网页地址。
-> 目标结果：新部门的数据、账号、处理记录、任务和网站名称都与原部门完全隔离。
+> 当前推荐方式：多个部门共用一个实例。系统已支持在“账号与权限”中按 `部门` 和 `小组` 管理成员，并区分创作者/主管/组长/组员权限，新部门直接在同一个 Supabase 项目里新增账号即可，无需单独部署。
+>
+> 本手册保留给“需要完全独立部署”的场景：另一个部门使用自己的 GitHub 仓库、自己的 Supabase 项目和自己的网页地址，数据、账号、处理记录、任务和网站名称都与原部门完全隔离。
 
 ---
 
@@ -110,6 +111,10 @@ Publishable Key: sb_publishable_____________________
 10. `supabase/migrations/010_clear_action_history_safe_delete.sql`
 11. `supabase/migrations/011_weekly_metric_snapshots.sql`
 12. `supabase/migrations/012_order_count_snapshot.sql`
+13. `supabase/migrations/013_department_team_group.sql`
+14. `supabase/migrations/014_team_leader_role.sql`
+15. `supabase/migrations/015_task_assignment_permissions.sql`
+16. `supabase/migrations/016_task_assignment_actor.sql`
 
 注意：
 
@@ -399,7 +404,7 @@ Excel 负责人：王丹
 
 ## 十二、上线验收清单
 
-- [ ] 新 Supabase 项目的 12 个迁移都执行成功
+- [ ] 新 Supabase 项目的 16 个迁移都执行成功
 - [ ] `weekly_metric_snapshots` 表存在并已生成当前批次汇总
 - [ ] `products.order_qty` 与 `weekly_metric_snapshots.order_count` 字段存在
 - [ ] `app_settings` 表存在
@@ -453,7 +458,7 @@ Excel 负责人：王丹
 
 检查：
 
-- 当前线上版本是否为 `v=21` 或更高
+- 当前线上版本是否为 `V7` 或更高
 - 是否曾在“账号与权限”中成功保存过名称
 - 是否使用了无痕模式导致本地缓存没有保留
 - 浏览器是否仍缓存了旧版 JS，按 `Ctrl + F5` 强制刷新
@@ -486,7 +491,7 @@ Excel 负责人：王丹
 - 免费版没有自动数据库备份，重大导入或结构调整前建议手工导出数据。
 - 每周导入只替换产品明细，历史处理记录和周统计保留。
 - 删除账号优先使用“归档账号”，不要直接删除历史归属。
-- 不建议多个部门共用一个 Supabase 项目；如果需要统一多租户平台，应单独设计部门字段、角色和 RLS。
+- 如果多个部门只是共用一套数据与账号，可直接共用一个 Supabase 项目，并通过 `profiles.department`、`profiles.team_group` 和角色分层管理；本手册适用于要求完全隔离数据的独立部署。
 
 ---
 
@@ -498,7 +503,7 @@ Excel 负责人：王丹
 请按照手册：
 1. Fork 你自己的 GitHub 仓库
 2. 创建自己的 Supabase 项目
-3. 按顺序执行 001–012 迁移
+3. 按顺序执行 001–016 迁移
 4. 部署 admin-users Edge Function
 5. 修改 assets/config.js
 6. 部署 GitHub Pages

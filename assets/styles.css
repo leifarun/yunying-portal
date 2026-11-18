@@ -778,6 +778,7 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
   font-variant-numeric: tabular-nums;
 }
 .task-input:focus { outline: none; border-color: #91b4fb; box-shadow: 0 0 0 3px rgba(47,111,237,.08); }
+.task-table td.task-editable-cell { background: #f2f7ff; box-shadow: inset 0 0 0 1px #d8e6ff; }
 .task-table tr.total-row td { background: #f8fafc; border-top: 1px solid var(--line); }
 .task-progress-table tbody tr { height: 60px; }
 .task-progress-table .team-person { min-width: 126px; }
