@@ -2338,7 +2338,7 @@ ${action.note || ""}
 
   function openCreateAccount() {
     $("#modal").className = "modal";
-    $("#modal").innerHTML = `<div class="modal-head"><h2>新建团队账号</h2><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="form-grid two"><label>姓名<span class="field-help">必须与导入表的「负责人」完全一致</span><input id="newAccountName" placeholder="例如：王丹"></label><label>用户名<span class="field-help">登录时使用，可使用中文、字母、数字、点、下划线或短横线</span><input id="newAccountUsername" autocomplete="off" placeholder="例如：wangdan 或 王丹"></label><label>初始密码<span class="field-help">至少 8 位</span><input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="设置初始密码"></label><label>确认密码<input id="newAccountPassword2" type="password" autocomplete="new-password" placeholder="再次输入密码"></label><label>角色<select id="newAccountRole"><option>组员</option><option>组长</option><option>主管</option><option>创作者</option></select></label></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="create-account-submit">创建账号</button></div>`;
+    $("#modal").innerHTML = `<div class="modal-head"><h2>新建团队账号</h2><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="form-grid two"><label>姓名<span class="field-help">必须与导入表的「负责人」完全一致</span><input id="newAccountName" placeholder="例如：王丹"></label><label>用户名<span class="field-help">登录时使用，可使用中文、字母、数字、点、下划线或短横线</span><input id="newAccountUsername" autocomplete="off" placeholder="例如：wangdan 或 王丹"></label><label>初始密码<span class="field-help">至少 8 位</span><input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="设置初始密码"></label><label>确认密码<input id="newAccountPassword2" type="password" autocomplete="new-password" placeholder="再次输入密码"></label><label>职位<span class="field-help">组长需要填写部门和小组</span><select id="newAccountRole"><option>组员</option><option>组长</option><option>主管</option><option>创作者</option></select></label><label>状态<select id="newAccountStatus"><option value="true" selected>在职</option><option value="false">离职</option></select></label><label>部门<span class="field-help">用于部门查看范围，如“运营三部”</span><input id="newAccountDepartment" placeholder="例如：运营三部"></label><label>小组<span class="field-help">用于小组查看范围，如“3.1组”</span><input id="newAccountGroup" placeholder="例如：3.1组"></label></div></div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="create-account-submit">创建账号</button></div>`;
     showModal();
   }
 
@@ -2348,18 +2348,33 @@ ${action.note || ""}
     const password = $("#newAccountPassword")?.value || "";
     const password2 = $("#newAccountPassword2")?.value || "";
     const role = $("#newAccountRole")?.value || "组员";
+    const active = $("#newAccountStatus")?.value !== "false";
+    const department = $("#newAccountDepartment")?.value.trim() || "";
+    const teamGroupRaw = $("#newAccountGroup")?.value.trim() || "";
+    const teamGroup = teamGroupRaw.replace(/\s*组\s*$/, "");
     if (!name) { toast("请填写姓名", "error"); return; }
     if (!username) { toast("请填写用户名", "error"); return; }
     if (password.length < 8) { toast("密码至少需要 8 位", "error"); return; }
     if (password !== password2) { toast("两次输入的密码不一致", "error"); return; }
+    if (role !== "创作者" && !department) { toast("请填写部门", "error"); return; }
+    if (role === "组长" && !teamGroup) { toast("组长必须填写小组", "error"); return; }
     const button = $("[data-action='create-account-submit']");
     if (button) { button.disabled = true; button.textContent = "正在创建…"; }
     try {
-      await callAdminUsers({ action: "create", name, username, password, role });
+      const created = await callAdminUsers({ action: "create", name, username, password, role, department, team_group: teamGroup, active });
+      const createdId = created?.user?.id;
+      if (!createdId) throw new Error("账号已创建，但没有返回账号 ID，请刷新后在账号表中补填部门和小组");
+      const { error: profileError } = await sb.from("profiles").update({
+        role,
+        department: department || null,
+        team_group: teamGroup || null,
+        active
+      }).eq("id", createdId);
+      if (profileError) throw new Error(`账号已创建，但资料补充失败：${profileError.message}`);
       await refreshProfiles();
       closeModal();
       renderSettings();
-      toast(`账号 ${username} 已创建，可直接登录`, "success");
+      toast(active ? `账号 ${username} 已创建，可直接登录` : `账号 ${username} 已创建，当前为离职状态`, "success");
     } catch (error) {
       toast(errorMessage(error), "error");
     } finally {

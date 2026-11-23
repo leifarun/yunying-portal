@@ -81,8 +81,14 @@ Deno.serve(async (req) => {
     const password = String(body.password || "");
     const name = String(body.name || "").trim();
     const role = ["组长", "主管", "创作者"].includes(String(body.role)) ? String(body.role) : "组员";
+    const department = String(body.department || "").trim();
+    const teamGroup = String(body.team_group || "").trim();
+    const active = body.active !== false;
 
     if (!name) return json({ error: "姓名不能为空" }, 400);
+    if (role === "组长" && (!department || !teamGroup)) {
+      return json({ error: "组长必须填写部门和小组" }, 400);
+    }
     if (!/^[\p{L}\p{N}._-]{2,32}$/u.test(username)) {
       return json({ error: "用户名只能使用 2-32 位文字、字母、数字、点、下划线或短横线" }, 400);
     }
@@ -109,7 +115,9 @@ Deno.serve(async (req) => {
       name,
       role,
       login_name: username,
-      active: true,
+      department: department || null,
+      team_group: teamGroup || null,
+      active,
     }, { onConflict: "id" });
 
     if (upsertError) {
@@ -119,7 +127,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
-      user: { id: created.user.id, name, username, role, active: true },
+      user: { id: created.user.id, name, username, role, department, team_group: teamGroup, active },
     });
   }
 
