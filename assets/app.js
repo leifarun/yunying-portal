@@ -179,6 +179,23 @@
     { key: "fba_value", label: "FBA货值", width: 76 }, { key: "order_gross_profit", label: "订单毛利润额", width: 100 }, { key: "gross_margin", label: "订单毛利率", width: 86 }, { key: "issue", label: "系统判定", width: 152 }
   ];
 
+  const EXPORT_COLUMNS = [
+    { group: "基础", label: "ASIN" }, { group: "基础", label: "MSKU" }, { group: "基础", label: "FNSKU" }, { group: "基础", label: "SKU" },
+    { group: "基础", label: "国家" }, { group: "基础", label: "店铺" }, { group: "基础", label: "负责人" }, { group: "基础", label: "状态" },
+    { group: "销售", label: "销量" }, { group: "销售", label: "订单量" }, { group: "销售", label: "销售额" }, { group: "销售", label: "净销售额" },
+    { group: "销售", label: "退款量" }, { group: "销售", label: "退款率" }, { group: "销售", label: "评分" }, { group: "销售", label: "评论数" },
+    { group: "销售", label: "价格(原价)" }, { group: "销售", label: "优惠价" },
+    { group: "库存", label: "FBA可售" }, { group: "库存", label: "FBA不可售" }, { group: "库存", label: "FBA货值" }, { group: "库存", label: "库销比" },
+    { group: "库存", label: "库龄 0-30天" }, { group: "库存", label: "库龄 31-60天" }, { group: "库存", label: "库龄 61-90天" }, { group: "库存", label: "库龄 91-180天" },
+    { group: "库存", label: "库龄 181-270天" }, { group: "库存", label: "库龄 271-330天" }, { group: "库存", label: "库龄 331-365天" }, { group: "库存", label: "库龄 365天以上" },
+    { group: "利润", label: "订单毛利润额" }, { group: "利润", label: "订单毛利率" }, { group: "利润", label: "平均单个利润" },
+    { group: "广告", label: "广告花费" }, { group: "广告", label: "广告订单量" }, { group: "广告", label: "广告销售额" }, { group: "广告", label: "展示" },
+    { group: "广告", label: "点击" }, { group: "广告", label: "CTR" }, { group: "广告", label: "广告CVR" }, { group: "广告", label: "CPC" },
+    { group: "广告", label: "ROAS" }, { group: "广告", label: "ACOS" }, { group: "广告", label: "ACoAS" }, { group: "广告", label: "广告订单占比" },
+    { group: "问题", label: "问题板块" }
+  ];
+  const EXPORT_COLUMNS_STORAGE_KEY = "portal-export-columns-v1";
+
   const NAV_SECTIONS = [
     { title: "数据视图", items: [{ view: "dashboard", label: "总数据看板", icon: "◫" }, { view: "products", board: "all", label: "总 Listing 数据", icon: "▦" }] },
     { title: "优化板块", items: [
@@ -843,7 +860,11 @@
     if (action === "confirm-action-import") confirmActionImport();
     if (action === "confirm-import") confirmImport();
     if (action === "cancel-import") { state.pendingImport = null; renderView(); }
-    if (action === "export-board") exportBoardCsv();
+    if (action === "export-board") openExportColumns();
+    if (action === "export-cols-all") setExportColumnChecks(true);
+    if (action === "export-cols-clear") setExportColumnChecks(false);
+    if (action === "export-cols-reset") { $$("#modal [data-export-col]").forEach((input) => { input.checked = true; }); }
+    if (action === "export-cols-confirm") confirmExportColumns();
     if (action === "export-logs") exportActionsCsv();
     if (action === "open-clear-history") openClearHistoryModal();
     if (action === "confirm-clear-history") clearActionHistory();
@@ -2465,8 +2486,77 @@ ${action.note || ""}
     const rows = state.actions.map((action) => ({ "时间": formatFullDateTime(action.created_at), "操作人": action.user_name || "", "优化板块": BOARD[action.board]?.label || action.board || "", "ASIN": action.snapshot?.asin || "", "MSKU": action.msku || "", "FNSKU": action.snapshot?.fnsku || "", "店铺": action.shop || "", "处理类型": action.action_type || "", "具体动作": action.note || "" }));
     downloadCsv(`处理记录_${todayStr()}.csv`, rows);
   }
-  function exportBoardCsv() {
-    const rows = filteredProducts(state.view === "board" ? state.board : "all").map((p) => ({ ASIN: p.asin, MSKU: p.msku, FNSKU: p.fnsku, 国家: p.country, 店铺: p.shop, 负责人: p.owner, 状态: p.status, 销量: p.sales, 销售额: p.revenue, 净销售额: p.net_sales, 订单量: p.order_qty, 退款量: p.refund_qty, 退款率: p.refund_rate, 评分: p.score, FBA可售: p.fba_avail, FBA不可售: p.fba_unavail, FBA货值: p.fba_value, 订单毛利润额: p.order_gross_profit, 订单毛利率: p.gross_margin, 广告花费: p.ad_spend, 广告订单: p.ad_orders, 广告销售额: p.ad_rev, 展示: p.imp, 点击: p.clk, CTR: p.ctr, 广告CVR: p.cvr, 库销比: p.kxb, 问题板块: p.issueKeys.map((key) => BOARD[key]?.label).join(" / ") }));
+  function exportProductRow(p) {
+    return {
+      "ASIN": p.asin,
+      "MSKU": p.msku,
+      "FNSKU": p.fnsku,
+      "SKU": p.sku,
+      "国家": p.country,
+      "店铺": p.shop,
+      "负责人": p.owner,
+      "状态": p.status,
+      "销量": p.sales,
+      "订单量": p.order_qty,
+      "销售额": p.revenue,
+      "净销售额": p.net_sales,
+      "退款量": p.refund_qty,
+      "退款率": p.refund_rate,
+      "评分": p.score,
+      "评论数": p.reviews,
+      "价格(原价)": p.price,
+      "优惠价": p.sale_price,
+      "FBA可售": p.fba_avail,
+      "FBA不可售": p.fba_unavail,
+      "FBA货值": p.fba_value,
+      "库销比": p.kxb,
+      "库龄 0-30天": p.age0,
+      "库龄 31-60天": p.age31,
+      "库龄 61-90天": p.age61,
+      "库龄 91-180天": p.age91,
+      "库龄 181-270天": p.age181,
+      "库龄 271-330天": p.age271,
+      "库龄 331-365天": p.age331,
+      "库龄 365天以上": p.age365p,
+      "订单毛利润额": p.order_gross_profit,
+      "订单毛利率": p.gross_margin,
+      "平均单个利润": p.avg_profit,
+      "广告花费": p.ad_spend,
+      "广告订单量": p.ad_orders,
+      "广告销售额": p.ad_rev,
+      "展示": p.imp,
+      "点击": p.clk,
+      "CTR": p.ctr,
+      "广告CVR": p.cvr,
+      "CPC": p.cpc,
+      "ROAS": p.roas,
+      "ACOS": p.acos,
+      "ACoAS": p.acoas,
+      "广告订单占比": p.adShare,
+      "问题板块": (p.issueKeys || []).map((key) => BOARD[key]?.label || key).join(" / ")
+    };
+  }
+
+  function loadExportColumns() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(EXPORT_COLUMNS_STORAGE_KEY) || "null");
+      if (Array.isArray(saved)) {
+        const valid = new Set(EXPORT_COLUMNS.map((column) => column.label));
+        const selected = new Set(saved.filter((label) => valid.has(label)));
+        if (selected.size) return selected;
+      }
+    } catch (_) {}
+    return new Set(EXPORT_COLUMNS.map((column) => column.label));
+  }
+
+  function exportBoardCsv(selected = null) {
+    const labels = EXPORT_COLUMNS.filter((column) => !selected || selected.has(column.label)).map((column) => column.label);
+    const rows = filteredProducts(state.view === "board" ? state.board : "all").map((p) => {
+      const full = exportProductRow(p);
+      const picked = {};
+      labels.forEach((label) => { picked[label] = full[label]; });
+      return picked;
+    });
     downloadCsv(`${BOARD[state.board]?.label || "总Listing数据"}_${todayStr()}.csv`, rows);
   }
   function exportWeeklyCsv() {
@@ -2482,6 +2572,28 @@ ${action.note || ""}
     const csv = "\ufeff" + [headers.map(escapeCsv).join(","), ...rows.map((row) => headers.map((header) => escapeCsv(row[header])).join(","))].join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }), url = URL.createObjectURL(blob), a = document.createElement("a");
     a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function openExportColumns() {
+    const selected = loadExportColumns();
+    const groups = {};
+    EXPORT_COLUMNS.forEach((column) => { (groups[column.group] = groups[column.group] || []).push(column); });
+    const groupHtml = Object.entries(groups).map(([group, columns]) => `<div class="export-group"><b>${escapeHtml(group)}</b><div class="column-grid">${columns.map((column) => `<label><input type="checkbox" data-export-col="${attr(column.label)}" ${selected.has(column.label) ? "checked" : ""}> ${escapeHtml(column.label)}</label>`).join("")}</div></div>`).join("");
+    $("#modal").className = "modal";
+    $("#modal").innerHTML = `<div class="modal-head"><h2>导出列选择</h2><button class="icon-btn close" data-action="close-modal">×</button></div><div class="modal-body"><div class="export-tools"><button class="btn btn-sm" data-action="export-cols-all">全选</button><button class="btn btn-sm" data-action="export-cols-clear">清空</button><button class="btn btn-sm" data-action="export-cols-reset">恢复默认</button></div>${groupHtml}</div><div class="modal-foot"><button class="btn" data-action="close-modal">取消</button><button class="btn btn-primary" data-action="export-cols-confirm">导出 CSV</button></div>`;
+    showModal();
+  }
+
+  function setExportColumnChecks(value) {
+    $$("#modal [data-export-col]").forEach((input) => { input.checked = value; });
+  }
+
+  function confirmExportColumns() {
+    const selected = new Set($$("#modal [data-export-col]:checked").map((input) => input.dataset.exportCol));
+    if (!selected.size) { toast("请至少选择一列", "error"); return; }
+    try { localStorage.setItem(EXPORT_COLUMNS_STORAGE_KEY, JSON.stringify([...selected])); } catch (_) {}
+    closeModal();
+    exportBoardCsv(selected);
   }
 
   function showModal() { $("#modal").classList.remove("hidden"); $("#modalBackdrop").classList.remove("hidden"); }

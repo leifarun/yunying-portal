@@ -564,6 +564,10 @@ body.table-hscroll-active .content { padding-bottom: 72px; }
 .column-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; }
 .column-grid label { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink-2); font-size: 10.5px; cursor: pointer; }
 .column-grid input { accent-color: var(--blue); }
+.export-tools { display: flex; gap: 8px; margin-bottom: 6px; }
+.export-group { margin-top: 14px; }
+.export-group:first-of-type { margin-top: 0; }
+.export-group > b { display: block; margin-bottom: 7px; color: var(--ink-2); font-size: 10.5px; }
 
 @media (max-width: 1320px) {
   .dash-kpi-grid.five { grid-template-columns: repeat(3, minmax(0, 1fr)); }
