@@ -838,10 +838,13 @@
     if (!actionEl) return;
     const action = actionEl.dataset.action;
     if (action === "sort-column") {
+      const tableScroll = captureProductTableScroll();
       state.sortKey = actionEl.dataset.sortKey || null;
       state.sortDir = actionEl.dataset.sortDir === "asc" ? "asc" : "desc";
       state.page = 1;
       renderView();
+      restoreProductTableScroll(tableScroll);
+      requestAnimationFrame(() => restoreProductTableScroll(tableScroll));
       return;
     }
     if (action === "reload") loadWorkspace(true);
@@ -1102,6 +1105,22 @@
     }
     content.innerHTML = `<div class="card"><div class="empty"><b>看板组件加载失败</b><span>请刷新页面后重试。</span></div></div>`;
   }
+  function captureProductTableScroll() {
+    const table = $("#content .table-scroll .prototype-data-table");
+    const scroller = table?.closest(".table-scroll");
+    if (!scroller) return null;
+    return { left: scroller.scrollLeft, pageY: window.scrollY };
+  }
+
+  function restoreProductTableScroll(snapshot) {
+    if (!snapshot) return;
+    const table = $("#content .table-scroll .prototype-data-table");
+    const scroller = table?.closest(".table-scroll");
+    if (scroller) scroller.scrollLeft = snapshot.left;
+    if (typeof snapshot.pageY === "number") window.scrollTo({ top: snapshot.pageY, behavior: "instant" });
+    scheduleStickyTableUi();
+  }
+
   function sortProducts(rows) {
     if (!state.sortKey) return rows;
     const direction = state.sortDir === "asc" ? 1 : -1;
